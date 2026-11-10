@@ -6,6 +6,7 @@ import { Hero } from './components/Hero'
 import { ProductGrid } from './components/ProductGrid'
 import { ProductModal } from './components/ProductModal'
 import { products, type Product } from './data/products'
+import { asset } from './lib/assets'
 import './App.css'
 
 const initialFilters: FilterState = {
@@ -102,7 +103,7 @@ function App() {
         <section className="contact" id="contacto">
           <div className="contact-inner">
             <img
-              src="/images/logo-green.png"
+              src={asset('images/logo-green.png')}
               alt="GREEN"
               className="contact-logo"
             />

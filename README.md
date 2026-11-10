@@ -1,32 +1,38 @@
-# React + TypeScript + Vite
+# GREEN Store
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Catálogo digital de zapatillas. Explora marcas, modelos, categorías y tallas en una interfaz clara y rápida.
 
-Currently, two official plugins are available:
+**Demo:** [heraldofortuna.github.io/green-store](https://heraldofortuna.github.io/green-store/)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## Características
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- Catálogo filtrable por marca, categoría y talla
+- Vista de detalle por producto
+- Diseño responsive (móvil y escritorio)
+- Despliegue automático con GitHub Pages
 
-## Expanding the Oxlint configuration
+## Stack
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+React · TypeScript · Vite
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+## Desarrollo local
+
+```bash
+npm install
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Abrí [http://localhost:5173/green-store/](http://localhost:5173/green-store/)
+
+## Build
+
+```bash
+npm run build
+npm run preview
+```
+
+## Licencia
+
+Uso privado del proyecto.

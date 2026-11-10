@@ -1,3 +1,5 @@
+import { asset } from '../lib/assets'
+
 interface HeroProps {
   onExplore: () => void
 }
@@ -7,7 +9,7 @@ export function Hero({ onExplore }: HeroProps) {
     <section className="hero" id="top" aria-label="Presentación GREEN">
       <div className="hero-media" aria-hidden="true">
         <img
-          src="/images/hero-atmosphere.png"
+          src={asset('images/hero-atmosphere.png')}
           alt=""
           className="hero-atmosphere"
         />
@@ -16,7 +18,7 @@ export function Hero({ onExplore }: HeroProps) {
 
       <div className="hero-content">
         <img
-          src="/images/logo-green.png"
+          src={asset('images/logo-green.png')}
           alt="GREEN"
           className="hero-logo"
         />

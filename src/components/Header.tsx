@@ -1,3 +1,5 @@
+import { asset } from '../lib/assets'
+
 interface HeaderProps {
   onCatalogClick: () => void
   cartCount: number
@@ -7,7 +9,7 @@ export function Header({ onCatalogClick, cartCount }: HeaderProps) {
   return (
     <header className="site-header">
       <a href="#top" className="brand-mark" aria-label="GREEN inicio">
-        <img src="/images/logo-green.png" alt="GREEN" className="brand-logo" />
+        <img src={asset('images/logo-green.png')} alt="GREEN" className="brand-logo" />
       </a>
 
       <nav className="site-nav" aria-label="Principal">
