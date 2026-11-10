@@ -77,7 +77,7 @@ export function ProductModal({ product, onClose, onInquire }: ProductModalProps)
             {product.name}
           </h2>
           <p className="modal-meta">
-            {product.category} · Modelo {product.model}
+            {product.category} · {product.gender} · Modelo {product.model}
           </p>
           <p className="modal-price">{formatPrice(product.price)}</p>
           <p className="modal-copy">{product.description}</p>

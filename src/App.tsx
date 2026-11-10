@@ -14,6 +14,7 @@ const initialFilters: FilterState = {
   search: '',
   brand: '',
   category: '',
+  gender: '',
   size: '',
 }
 
@@ -33,15 +34,24 @@ function App() {
         product.brand.toLowerCase().includes(query) ||
         product.model.toLowerCase().includes(query) ||
         product.category.toLowerCase().includes(query) ||
+        product.gender.toLowerCase().includes(query) ||
         product.id.toLowerCase().includes(query)
 
       const matchesBrand = !filters.brand || product.brand === filters.brand
       const matchesCategory =
         !filters.category || product.category === filters.category
+      const matchesGender =
+        !filters.gender || product.gender === filters.gender
       const matchesSize =
         !filters.size || product.sizes.includes(filters.size)
 
-      return matchesSearch && matchesBrand && matchesCategory && matchesSize
+      return (
+        matchesSearch &&
+        matchesBrand &&
+        matchesCategory &&
+        matchesGender &&
+        matchesSize
+      )
     })
 
     list.sort((a, b) => a.price - b.price)
@@ -51,11 +61,6 @@ function App() {
 
   const scrollToCatalog = () => {
     catalogRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
-
-  const selectBrand = (brand: string) => {
-    setFilters((current) => ({ ...current, brand }))
-    scrollToCatalog()
   }
 
   const handleInquire = (product: Product, size: number) => {
@@ -69,7 +74,7 @@ function App() {
 
       <main>
         <Hero onExplore={scrollToCatalog} />
-        <BrandStrip onSelect={selectBrand} />
+        <BrandStrip />
 
         <section className="catalog" id="catalogo" ref={catalogRef}>
           <div className="catalog-inner">

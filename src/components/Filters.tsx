@@ -1,9 +1,17 @@
-import { brands, categories, allSizes, type Category } from '../data/products'
+import {
+  brands,
+  categories,
+  genders,
+  allSizes,
+  type Category,
+  type Gender,
+} from '../data/products'
 
 export interface FilterState {
   search: string
   brand: string
   category: Category | ''
+  gender: Gender | ''
   size: number | ''
 }
 
@@ -23,12 +31,17 @@ export function Filters({ filters, onChange, resultCount }: FiltersProps) {
       search: '',
       brand: '',
       category: '',
+      gender: '',
       size: '',
     })
   }
 
   const hasActive =
-    filters.search || filters.brand || filters.category || filters.size
+    filters.search ||
+    filters.brand ||
+    filters.category ||
+    filters.gender ||
+    filters.size
 
   return (
     <section className="filters" aria-label="Filtros del catálogo">
@@ -87,6 +100,21 @@ export function Filters({ filters, onChange, resultCount }: FiltersProps) {
             {categories.map((category) => (
               <option key={category} value={category}>
                 {category}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="field">
+          <span>Género</span>
+          <select
+            value={filters.gender}
+            onChange={(e) => update('gender', e.target.value as Gender | '')}
+          >
+            <option value="">Todos</option>
+            {genders.map((gender) => (
+              <option key={gender} value={gender}>
+                {gender}
               </option>
             ))}
           </select>

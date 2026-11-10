@@ -1,5 +1,4 @@
 import { formatPrice, type Product } from '../data/products'
-import { BrandMark } from './BrandMark'
 
 interface ProductCardProps {
   product: Product
@@ -23,12 +22,10 @@ export function ProductCard({ product, onOpen }: ProductCardProps) {
         </div>
 
         <div className="product-body">
-          <div className="product-brand">
-            <BrandMark brand={product.brand} className="product-brand-mark" />
-          </div>
+          <p className="product-brand">{product.brand}</p>
           <h3 className="product-name">{product.name}</h3>
           <p className="product-meta">
-            {product.category} · {product.model}
+            {product.category} · {product.gender} · {product.model}
           </p>
           <div className="product-footer">
             <span className="product-price">{formatPrice(product.price)}</span>

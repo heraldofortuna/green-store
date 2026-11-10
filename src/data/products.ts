@@ -1,4 +1,5 @@
 export type Category = 'Lifestyle' | 'Running' | 'Basketball' | 'Skate' | 'Casual'
+export type Gender = 'Hombre' | 'Mujer' | 'Unisex'
 
 export interface Product {
   id: string
@@ -6,6 +7,7 @@ export interface Product {
   brand: string
   model: string
   category: Category
+  gender: Gender
   price: number
   sizes: number[]
   colors: string[]
@@ -31,6 +33,8 @@ export const categories: Category[] = [
   'Casual',
 ]
 
+export const genders: Gender[] = ['Hombre', 'Mujer', 'Unisex']
+
 export const allSizes = [36, 37, 38, 39, 40, 41, 42, 43, 44, 45]
 
 export const products: Product[] = [
@@ -40,6 +44,7 @@ export const products: Product[] = [
     brand: 'Nike',
     model: 'Air Force 1',
     category: 'Lifestyle',
+    gender: 'Unisex',
     price: 429.9,
     sizes: [38, 39, 40, 41, 42, 43, 44],
     colors: ['Blanco', 'Negro'],
@@ -55,6 +60,7 @@ export const products: Product[] = [
     brand: 'Nike',
     model: 'Dunk Low',
     category: 'Lifestyle',
+    gender: 'Unisex',
     price: 489.9,
     sizes: [37, 38, 39, 40, 41, 42, 43],
     colors: ['Negro', 'Blanco'],
@@ -70,6 +76,7 @@ export const products: Product[] = [
     brand: 'Nike',
     model: 'Pegasus',
     category: 'Running',
+    gender: 'Hombre',
     price: 519.9,
     sizes: [39, 40, 41, 42, 43, 44, 45],
     colors: ['Negro', 'Volt'],
@@ -84,6 +91,7 @@ export const products: Product[] = [
     brand: 'Adidas',
     model: 'Samba',
     category: 'Casual',
+    gender: 'Unisex',
     price: 399.9,
     sizes: [36, 37, 38, 39, 40, 41, 42, 43],
     colors: ['Negro', 'Blanco'],
@@ -99,6 +107,7 @@ export const products: Product[] = [
     brand: 'Adidas',
     model: 'Campus',
     category: 'Lifestyle',
+    gender: 'Mujer',
     price: 419.9,
     sizes: [37, 38, 39, 40, 41, 42, 43, 44],
     colors: ['Verde', 'Gris'],
@@ -113,6 +122,7 @@ export const products: Product[] = [
     brand: 'Adidas',
     model: 'Ultraboost',
     category: 'Running',
+    gender: 'Hombre',
     price: 649.9,
     sizes: [40, 41, 42, 43, 44, 45],
     colors: ['Negro', 'Blanco'],
@@ -127,6 +137,7 @@ export const products: Product[] = [
     brand: 'New Balance',
     model: '550',
     category: 'Lifestyle',
+    gender: 'Unisex',
     price: 459.9,
     sizes: [38, 39, 40, 41, 42, 43, 44],
     colors: ['Blanco', 'Verde'],
@@ -142,6 +153,7 @@ export const products: Product[] = [
     brand: 'New Balance',
     model: '9060',
     category: 'Lifestyle',
+    gender: 'Hombre',
     price: 549.9,
     sizes: [39, 40, 41, 42, 43, 44],
     colors: ['Gris', 'Plata'],
@@ -156,6 +168,7 @@ export const products: Product[] = [
     brand: 'New Balance',
     model: '1080',
     category: 'Running',
+    gender: 'Hombre',
     price: 599.9,
     sizes: [40, 41, 42, 43, 44, 45],
     colors: ['Negro', 'Azul'],
@@ -170,6 +183,7 @@ export const products: Product[] = [
     brand: 'Puma',
     model: 'Suede Classic',
     category: 'Casual',
+    gender: 'Unisex',
     price: 349.9,
     sizes: [36, 37, 38, 39, 40, 41, 42, 43],
     colors: ['Negro', 'Rojo', 'Verde'],
@@ -184,6 +198,7 @@ export const products: Product[] = [
     brand: 'Puma',
     model: 'RS-X',
     category: 'Lifestyle',
+    gender: 'Hombre',
     price: 429.9,
     sizes: [39, 40, 41, 42, 43, 44],
     colors: ['Blanco', 'Negro'],
@@ -198,6 +213,7 @@ export const products: Product[] = [
     brand: 'Vans',
     model: 'Old Skool',
     category: 'Skate',
+    gender: 'Unisex',
     price: 299.9,
     sizes: [36, 37, 38, 39, 40, 41, 42, 43, 44],
     colors: ['Negro', 'Blanco'],
@@ -213,6 +229,7 @@ export const products: Product[] = [
     brand: 'Vans',
     model: 'SK8-Hi',
     category: 'Skate',
+    gender: 'Unisex',
     price: 329.9,
     sizes: [37, 38, 39, 40, 41, 42, 43],
     colors: ['Negro', 'Checkerboard'],
@@ -227,6 +244,7 @@ export const products: Product[] = [
     brand: 'Converse',
     model: 'Chuck 70',
     category: 'Casual',
+    gender: 'Mujer',
     price: 319.9,
     sizes: [36, 37, 38, 39, 40, 41, 42, 43, 44],
     colors: ['Negro', 'Blanco', 'Verde'],
@@ -241,6 +259,7 @@ export const products: Product[] = [
     brand: 'Nike',
     model: 'LeBron',
     category: 'Basketball',
+    gender: 'Hombre',
     price: 699.9,
     sizes: [40, 41, 42, 43, 44, 45],
     colors: ['Negro', 'Dorado'],
@@ -255,6 +274,7 @@ export const products: Product[] = [
     brand: 'Adidas',
     model: 'Harden',
     category: 'Basketball',
+    gender: 'Hombre',
     price: 579.9,
     sizes: [40, 41, 42, 43, 44],
     colors: ['Negro', 'Rojo'],

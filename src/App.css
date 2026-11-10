@@ -169,17 +169,28 @@
   width: 100%;
 }
 
-.brand-strip,
+.brand-showcase,
 .catalog,
 .contact {
-  padding: clamp(3rem, 7vw, 5rem) clamp(1rem, 4vw, 2.5rem);
+  padding: clamp(3rem, 7vw, 5rem) 0;
 }
 
-.brand-strip-inner,
+.brand-showcase-heading,
 .catalog-inner,
 .contact-inner {
   width: min(1180px, 100%);
   margin: 0 auto;
+  padding-inline: clamp(1rem, 4vw, 2.5rem);
+}
+
+.catalog,
+.contact {
+  padding-inline: clamp(1rem, 4vw, 2.5rem);
+}
+
+.catalog-inner,
+.contact-inner {
+  padding-inline: 0;
 }
 
 .section-title {
@@ -193,35 +204,47 @@
   color: var(--text-muted);
 }
 
-.brand-row {
+.brand-showcase-heading {
+  text-align: center;
+}
+
+.brand-showcase-title {
+  margin: 0 auto;
+  max-width: 18ch;
+  font-size: clamp(2rem, 5.5vw, 3.4rem);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  text-align: center;
+}
+
+.brand-marquee {
+  margin-top: clamp(2rem, 5vw, 3rem);
+  overflow: hidden;
+  width: 100%;
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 8%,
+    #000 92%,
+    transparent
+  );
+}
+
+.brand-marquee-track {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.7rem;
-  margin-top: 1.5rem;
-}
-
-.brand-pill {
-  appearance: none;
-  display: inline-flex;
+  width: max-content;
+  gap: clamp(2.5rem, 6vw, 4.5rem);
   align-items: center;
-  justify-content: center;
-  min-width: 7.5rem;
-  min-height: 4.2rem;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text);
-  padding: 0.85rem 1.15rem;
-  border-radius: 18px;
-  cursor: pointer;
-  transition:
-    border-color 180ms ease,
-    background 180ms ease,
-    color 180ms ease,
-    transform 180ms ease;
+  animation: brand-marquee-right 32s linear infinite;
 }
 
-.brand-pill-logo {
-  min-width: 8.2rem;
+.brand-marquee-item {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  min-width: 10rem;
+  min-height: 5.5rem;
+  padding: 1rem 1.5rem;
 }
 
 .brand-mark-logo {
@@ -239,36 +262,43 @@
   color: var(--text);
 }
 
-.brand-pill:hover,
-.brand-pill:focus-visible {
-  border-color: rgba(164, 208, 55, 0.55);
-  background: rgba(164, 208, 55, 0.1);
-  color: #d8f28a;
-  outline: none;
-  transform: translateY(-1px);
+.brand-marquee-mark.brand-mark-logo {
+  width: clamp(7.5rem, 15vw, 12rem);
+  height: clamp(3.2rem, 6vw, 5rem);
 }
 
-.brand-pill:hover .brand-mark-text,
-.brand-pill:focus-visible .brand-mark-text {
-  color: #d8f28a;
+.brand-marquee-mark.brand-mark-text {
+  font-size: clamp(1.35rem, 3.2vw, 2rem);
+  white-space: nowrap;
+  color: #fff;
+}
+
+@keyframes brand-marquee-right {
+  from {
+    transform: translateX(-50%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-marquee-track {
+    animation: none;
+    flex-wrap: wrap;
+    width: 100%;
+    justify-content: center;
+    transform: none;
+  }
 }
 
 .product-brand {
   margin: 0;
-  min-height: 1.2rem;
-  display: flex;
-  align-items: center;
-}
-
-.product-brand-mark.brand-mark-logo {
-  width: auto;
-  max-width: 4.4rem;
-  height: 1.05rem;
-}
-
-.product-brand-mark.brand-mark-text {
   color: var(--lime);
   font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .filters-top {
@@ -281,7 +311,7 @@
 
 .filters-grid {
   display: grid;
-  grid-template-columns: 1.6fr repeat(3, 1fr);
+  grid-template-columns: 1.5fr repeat(4, minmax(0, 1fr));
   gap: 0.85rem;
   margin-bottom: 1.8rem;
 }

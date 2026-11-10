@@ -15,9 +15,6 @@ export function Header({ onCatalogClick }: HeaderProps) {
         <button type="button" className="nav-link" onClick={onCatalogClick}>
           Catálogo
         </button>
-        <a className="nav-link" href="#marcas">
-          Marcas
-        </a>
         <a className="nav-link" href="#contacto">
           Contacto
         </a>

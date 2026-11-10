@@ -1,32 +1,23 @@
 import { brandCatalog } from '../data/brands'
 import { BrandMark } from './BrandMark'
 
-interface BrandStripProps {
-  onSelect: (brand: string) => void
-}
+export function BrandStrip() {
+  const track = [...brandCatalog, ...brandCatalog]
 
-export function BrandStrip({ onSelect }: BrandStripProps) {
   return (
-    <section className="brand-strip" id="marcas" aria-label="Marcas">
-      <div className="brand-strip-inner">
-        <div>
-          <h2 className="section-title">Marcas</h2>
-          <p className="section-subtitle">
-            Filtra el catálogo por la casa que buscas.
-          </p>
-        </div>
+    <section className="brand-showcase" id="marcas" aria-label="Marcas">
+      <div className="brand-showcase-heading">
+        <h2 className="brand-showcase-title">
+          Trabajamos con las siguientes marcas
+        </h2>
+      </div>
 
-        <div className="brand-row">
-          {brandCatalog.map((brand) => (
-            <button
-              key={brand.name}
-              type="button"
-              className={brand.logo ? 'brand-pill brand-pill-logo' : 'brand-pill'}
-              onClick={() => onSelect(brand.name)}
-              aria-label={`Filtrar por ${brand.name}`}
-            >
-              <BrandMark brand={brand.name} />
-            </button>
+      <div className="brand-marquee" aria-hidden="true">
+        <div className="brand-marquee-track">
+          {track.map((brand, index) => (
+            <div key={`${brand.name}-${index}`} className="brand-marquee-item">
+              <BrandMark brand={brand.name} className="brand-marquee-mark" />
+            </div>
           ))}
         </div>
       </div>
