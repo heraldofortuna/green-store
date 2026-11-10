@@ -33,6 +33,16 @@ npm run build
 npm run preview
 ```
 
+## Publicación
+
+Cada push a `main` genera el sitio en la rama `gh-pages`.
+
+Publicación manual:
+
+```bash
+npm run deploy
+```
+
 ## Licencia
 
 Uso privado del proyecto.
