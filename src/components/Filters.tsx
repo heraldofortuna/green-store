@@ -5,7 +5,6 @@ export interface FilterState {
   brand: string
   category: Category | ''
   size: number | ''
-  sort: 'featured' | 'price-asc' | 'price-desc' | 'name'
 }
 
 interface FiltersProps {
@@ -25,7 +24,6 @@ export function Filters({ filters, onChange, resultCount }: FiltersProps) {
       brand: '',
       category: '',
       size: '',
-      sort: 'featured',
     })
   }
 
@@ -111,21 +109,6 @@ export function Filters({ filters, onChange, resultCount }: FiltersProps) {
                 EU {size}
               </option>
             ))}
-          </select>
-        </label>
-
-        <label className="field">
-          <span>Orden</span>
-          <select
-            value={filters.sort}
-            onChange={(e) =>
-              update('sort', e.target.value as FilterState['sort'])
-            }
-          >
-            <option value="featured">Destacados</option>
-            <option value="price-asc">Precio: menor a mayor</option>
-            <option value="price-desc">Precio: mayor a menor</option>
-            <option value="name">Nombre A–Z</option>
           </select>
         </label>
       </div>

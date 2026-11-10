@@ -15,15 +15,11 @@ const initialFilters: FilterState = {
   brand: '',
   category: '',
   size: '',
-  sort: 'featured',
 }
 
 function App() {
   const [filters, setFilters] = useState<FilterState>(initialFilters)
   const [selected, setSelected] = useState<Product | null>(null)
-  const [inquiries, setInquiries] = useState<
-    { productId: string; size: number }[]
-  >([])
   const [toast, setToast] = useState<string | null>(null)
   const catalogRef = useRef<HTMLElement>(null)
 
@@ -36,7 +32,8 @@ function App() {
         product.name.toLowerCase().includes(query) ||
         product.brand.toLowerCase().includes(query) ||
         product.model.toLowerCase().includes(query) ||
-        product.category.toLowerCase().includes(query)
+        product.category.toLowerCase().includes(query) ||
+        product.id.toLowerCase().includes(query)
 
       const matchesBrand = !filters.brand || product.brand === filters.brand
       const matchesCategory =
@@ -47,19 +44,7 @@ function App() {
       return matchesSearch && matchesBrand && matchesCategory && matchesSize
     })
 
-    list.sort((a, b) => {
-      switch (filters.sort) {
-        case 'price-asc':
-          return a.price - b.price
-        case 'price-desc':
-          return b.price - a.price
-        case 'name':
-          return a.name.localeCompare(b.name, 'es')
-        case 'featured':
-        default:
-          return Number(Boolean(b.featured)) - Number(Boolean(a.featured))
-      }
-    })
+    list.sort((a, b) => a.price - b.price)
 
     return list
   }, [filters])
@@ -74,17 +59,13 @@ function App() {
   }
 
   const handleInquire = (product: Product, size: number) => {
-    setInquiries((current) => [...current, { productId: product.id, size }])
     setToast(`Abriendo WhatsApp · ${product.name} talla ${size}`)
     window.setTimeout(() => setToast(null), 2600)
   }
 
   return (
     <div className="app-shell">
-      <Header
-        onCatalogClick={scrollToCatalog}
-        cartCount={inquiries.length}
-      />
+      <Header onCatalogClick={scrollToCatalog} />
 
       <main>
         <Hero onExplore={scrollToCatalog} />

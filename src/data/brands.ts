@@ -1,13 +1,22 @@
 export interface BrandInfo {
   name: string
-  logo: string
+  /** Ruta relativa dentro de /public. Si no hay logo, se muestra el nombre. */
+  logo?: string
 }
 
 export const brandCatalog: BrandInfo[] = [
-  { name: 'Nike', logo: 'images/brands/nike.svg' },
+  { name: 'Nike', logo: 'images/brands/nike.png' },
   { name: 'Adidas', logo: 'images/brands/adidas.svg' },
-  { name: 'New Balance', logo: 'images/brands/new-balance.svg' },
-  { name: 'Puma', logo: 'images/brands/puma.svg' },
-  { name: 'Vans', logo: 'images/brands/vans.svg' },
-  { name: 'Converse', logo: 'images/brands/converse.svg' },
+  { name: 'New Balance' },
+  { name: 'Puma' },
+  { name: 'Vans' },
+  { name: 'Converse', logo: 'images/brands/converse.png' },
 ]
+
+const brandByName = new Map(
+  brandCatalog.map((brand) => [brand.name.toLowerCase(), brand]),
+)
+
+export function getBrandInfo(name: string): BrandInfo {
+  return brandByName.get(name.toLowerCase()) ?? { name }
+}

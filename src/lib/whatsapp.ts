@@ -5,15 +5,17 @@ export function whatsappUrl(message: string): string {
 }
 
 export function sizeInquiryMessage(
+  code: string,
   brand: string,
   name: string,
   model: string,
   size: number,
 ): string {
   return [
-    '¡Hola GREEN! 👋',
+    '¡Hola GREEN!',
     '',
     'Quiero consultar disponibilidad de esta zapatilla:',
+    `• Código: ${code}`,
     `• Marca: ${brand}`,
     `• Modelo: ${name} (${model})`,
     `• Talla EU: ${size}`,
@@ -23,7 +25,7 @@ export function sizeInquiryMessage(
 }
 
 export const genericInquiryMessage = [
-  '¡Hola GREEN! 👋',
+  '¡Hola GREEN!',
   '',
   'Estoy buscando un modelo de zapatilla en particular.',
   '¿Me pueden ayudar a verificar disponibilidad?',

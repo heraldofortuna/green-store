@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { formatPrice, type Product } from '../data/products'
 import { sizeInquiryMessage, whatsappUrl } from '../lib/whatsapp'
+import { BrandMark } from './BrandMark'
 
 interface ProductModalProps {
   product: Product | null
@@ -37,7 +38,13 @@ export function ProductModal({ product, onClose, onInquire }: ProductModalProps)
     size === null
       ? undefined
       : whatsappUrl(
-          sizeInquiryMessage(product.brand, product.name, product.model, size),
+          sizeInquiryMessage(
+            product.id,
+            product.brand,
+            product.name,
+            product.model,
+            size,
+          ),
         )
 
   return (
@@ -63,7 +70,9 @@ export function ProductModal({ product, onClose, onInquire }: ProductModalProps)
         </div>
 
         <div className="modal-body">
-          <p className="product-brand">{product.brand}</p>
+          <div className="product-brand">
+            <BrandMark brand={product.brand} className="product-brand-mark" />
+          </div>
           <h2 id="product-modal-title" className="modal-title">
             {product.name}
           </h2>
