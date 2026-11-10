@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react'
 import { formatPrice, type Product } from '../data/products'
+import { sizeInquiryMessage, whatsappUrl } from '../lib/whatsapp'
 
 interface ProductModalProps {
   product: Product | null
   onClose: () => void
-  onAdd: (product: Product, size: number) => void
+  onInquire: (product: Product, size: number) => void
 }
 
-export function ProductModal({ product, onClose, onAdd }: ProductModalProps) {
+export function ProductModal({ product, onClose, onInquire }: ProductModalProps) {
   const [size, setSize] = useState<number | null>(null)
 
   useEffect(() => {
@@ -31,6 +32,13 @@ export function ProductModal({ product, onClose, onAdd }: ProductModalProps) {
   }, [product, onClose])
 
   if (!product) return null
+
+  const consultUrl =
+    size === null
+      ? undefined
+      : whatsappUrl(
+          sizeInquiryMessage(product.brand, product.name, product.model, size),
+        )
 
   return (
     <div className="modal-root" role="presentation" onClick={onClose}>
@@ -94,20 +102,24 @@ export function ProductModal({ product, onClose, onAdd }: ProductModalProps) {
             </div>
           </div>
 
-          <button
-            type="button"
-            className="btn btn-primary btn-block"
-            disabled={size === null}
-            onClick={() => {
-              if (size === null) return
-              onAdd(product, size)
-              onClose()
-            }}
-          >
-            {size === null
-              ? 'Selecciona una talla'
-              : `Consultar talla ${size}`}
-          </button>
+          {size === null ? (
+            <button type="button" className="btn btn-primary btn-block" disabled>
+              Selecciona una talla
+            </button>
+          ) : (
+            <a
+              className="btn btn-primary btn-block"
+              href={consultUrl}
+              target="_blank"
+              rel="noreferrer"
+              onClick={() => {
+                onInquire(product, size)
+                onClose()
+              }}
+            >
+              Consultar talla {size}
+            </a>
+          )}
         </div>
       </div>
     </div>

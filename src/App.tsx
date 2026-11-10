@@ -7,6 +7,7 @@ import { ProductGrid } from './components/ProductGrid'
 import { ProductModal } from './components/ProductModal'
 import { products, type Product } from './data/products'
 import { asset } from './lib/assets'
+import { genericInquiryMessage, whatsappUrl } from './lib/whatsapp'
 import './App.css'
 
 const initialFilters: FilterState = {
@@ -72,9 +73,9 @@ function App() {
     scrollToCatalog()
   }
 
-  const handleAdd = (product: Product, size: number) => {
+  const handleInquire = (product: Product, size: number) => {
     setInquiries((current) => [...current, { productId: product.id, size }])
-    setToast(`${product.brand} ${product.name} · talla ${size} agregada`)
+    setToast(`Abriendo WhatsApp · ${product.name} talla ${size}`)
     window.setTimeout(() => setToast(null), 2600)
   }
 
@@ -109,20 +110,17 @@ function App() {
             />
             <h2>¿Buscas un modelo en particular?</h2>
             <p>
-              Escríbenos por WhatsApp o Instagram y te confirmamos stock por
-              marca, modelo y talla.
+              Escríbenos por WhatsApp y te confirmamos stock por marca, modelo
+              y talla.
             </p>
             <div className="hero-cta">
               <a
                 className="btn btn-primary"
-                href="https://wa.me/"
+                href={whatsappUrl(genericInquiryMessage)}
                 target="_blank"
                 rel="noreferrer"
               >
                 WhatsApp
-              </a>
-              <a className="btn btn-ghost" href="mailto:hola@green.store">
-                Email
               </a>
             </div>
           </div>
@@ -136,7 +134,7 @@ function App() {
       <ProductModal
         product={selected}
         onClose={() => setSelected(null)}
-        onAdd={handleAdd}
+        onInquire={handleInquire}
       />
 
       {toast ? <div className="toast">{toast}</div> : null}

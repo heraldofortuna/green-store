@@ -1,4 +1,5 @@
-import { brands } from '../data/products'
+import { brandCatalog } from '../data/brands'
+import { asset } from '../lib/assets'
 
 interface BrandStripProps {
   onSelect: (brand: string) => void
@@ -16,14 +17,20 @@ export function BrandStrip({ onSelect }: BrandStripProps) {
         </div>
 
         <div className="brand-row">
-          {brands.map((brand) => (
+          {brandCatalog.map((brand) => (
             <button
-              key={brand}
+              key={brand.name}
               type="button"
               className="brand-pill"
-              onClick={() => onSelect(brand)}
+              onClick={() => onSelect(brand.name)}
+              aria-label={`Filtrar por ${brand.name}`}
             >
-              {brand}
+              <img
+                src={asset(brand.logo)}
+                alt=""
+                className="brand-logo-img"
+              />
+              <span className="brand-name">{brand.name}</span>
             </button>
           ))}
         </div>

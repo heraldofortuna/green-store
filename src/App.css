@@ -229,17 +229,36 @@
 
 .brand-pill {
   appearance: none;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  min-width: 7.5rem;
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text);
-  padding: 0.75rem 1.1rem;
-  border-radius: 999px;
+  padding: 0.95rem 1.1rem 0.85rem;
+  border-radius: 18px;
   cursor: pointer;
   transition:
     border-color 180ms ease,
     background 180ms ease,
     color 180ms ease,
     transform 180ms ease;
+}
+
+.brand-logo-img {
+  width: 4.8rem;
+  height: 1.7rem;
+  object-fit: contain;
+}
+
+.brand-name {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .brand-pill:hover,
@@ -249,6 +268,11 @@
   color: #d8f28a;
   outline: none;
   transform: translateY(-1px);
+}
+
+.brand-pill:hover .brand-name,
+.brand-pill:focus-visible .brand-name {
+  color: #d8f28a;
 }
 
 .filters-top {
