@@ -1,0 +1,42 @@
+---
+description: Actualización de stock del catálogo vía PDF sin gastar tokens en imágenes
+alwaysApply: true
+---
+
+# Catálogo GREEN — actualizaciones de stock
+
+## Regla principal
+
+Cuando el usuario entregue PDFs de comercio (Nike, Adidas, Reebok, RS21, etc.):
+
+1. **NO** abras, leas ni analices las fotos de zapatillas una por una.
+2. **NO** uses herramientas de visión sobre `public/images/products/**`.
+3. Ejecuta el import por script y reporta solo conteos (marca → N productos, con/sin imagen).
+
+## Comando
+
+```bash
+# Reimportar todo lo configurado en el script
+npm run import:catalog
+
+# Reemplazar SOLO una marca (borra esa marca y carga el/los PDF nuevos)
+npm run import:catalog -- --brand Adidas --file "C:/ruta/catalogo.pdf"
+```
+
+Varios PDF de la misma marca:
+
+```bash
+npm run import:catalog -- --brand Adidas --file "C:/ruta/linea.pdf" --file "C:/ruta/liquidacion.pdf"
+```
+
+## Criterios de negocio (no repreguntar si ya están)
+
+- Precio mostrado: **Precio Emprendedor** (2.ª columna de 3).
+- Adidas línea + liquidación = marca Adidas (sin etiqueta liquidación).
+- Imagen: foto grande del PDF (~600px), extraída por `pdfimages` en el script.
+- Géneros: Hombre, Mujer, Unisex, Niños.
+- Al actualizar una marca, **reemplazar solo esa marca**; el resto del catálogo se conserva.
+
+## Respuesta al usuario
+
+Sé breve: confirma marca(s) actualizadas, totales y si hace falta commit/push. No listes los 555 productos.

@@ -43,6 +43,22 @@ Publicación manual:
 npm run deploy
 ```
 
+## Actualizar stock (PDFs de comercio)
+
+El catálogo se actualiza con un script local (sin revisar foto por foto):
+
+```bash
+# Reimportar todos los PDF configurados en scripts/import-catalog.mjs
+npm run import:catalog
+
+# Reemplazar solo una marca
+npm run import:catalog -- --brand Adidas --file "C:/Users/heral/Downloads/catalogo-adidas.pdf"
+```
+
+- Precio mostrado: **Precio Emprendedor**
+- Las imágenes salen del PDF automáticamente
+- Al actualizar una marca, el resto del stock se conserva
+
 ## Licencia
 
 Uso privado del proyecto.

@@ -348,14 +348,12 @@
   outline-offset: 2px;
 }
 
-.product-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 1rem;
+.product-grid-virtual {
+  min-height: 20rem;
 }
 
-.product-grid-item {
-  animation: rise-in 560ms cubic-bezier(0.22, 1, 0.36, 1) both;
+.product-grid-row {
+  will-change: transform;
 }
 
 .product-card {
@@ -368,6 +366,8 @@
     transform 220ms ease,
     border-color 220ms ease,
     box-shadow 220ms ease;
+  content-visibility: auto;
+  contain-intrinsic-size: 360px;
 }
 
 .product-card:hover {
@@ -392,6 +392,8 @@
   position: relative;
   aspect-ratio: 1 / 1;
   overflow: hidden;
+  display: grid;
+  place-items: center;
   background:
     radial-gradient(circle at 30% 20%, rgba(164, 208, 55, 0.16), transparent 45%),
     #0c0c0c;
@@ -404,8 +406,31 @@
   transition: transform 420ms ease;
 }
 
-.product-card:hover .product-media img {
+.product-media.is-placeholder img {
+  width: 42%;
+  height: auto;
+  max-width: 7.5rem;
+  object-fit: contain;
+  opacity: 0.9;
+}
+
+.product-card:hover .product-media:not(.is-placeholder) img {
   transform: scale(1.05);
+}
+
+.modal-media.is-placeholder {
+  display: grid;
+  place-items: center;
+  min-height: 280px;
+  background:
+    radial-gradient(circle at 50% 40%, rgba(164, 208, 55, 0.14), transparent 50%),
+    #090909;
+}
+
+.modal-media.is-placeholder img {
+  width: min(38%, 160px);
+  height: auto;
+  object-fit: contain;
 }
 
 .product-badge {
@@ -687,10 +712,6 @@
 }
 
 @media (max-width: 1100px) {
-  .product-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
   .filters-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -709,17 +730,13 @@
     grid-template-columns: 1fr;
   }
 
-  .modal-media img {
+  .modal-media:not(.is-placeholder) img {
     min-height: 240px;
     max-height: 280px;
   }
 }
 
 @media (max-width: 720px) {
-  .product-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .filters-grid {
     grid-template-columns: 1fr;
   }
@@ -734,8 +751,3 @@
   }
 }
 
-@media (max-width: 480px) {
-  .product-grid {
-    grid-template-columns: 1fr;
-  }
-}

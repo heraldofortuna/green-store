@@ -4,14 +4,12 @@ export interface BrandInfo {
   logo?: string
 }
 
+/** Marcas mostradas en el carrusel demostrativo */
 export const brandCatalog: BrandInfo[] = [
   { name: 'Nike', logo: 'images/brands/nike.png' },
   { name: 'Adidas', logo: 'images/brands/adidas.png' },
-  { name: 'New Balance' },
-  { name: 'Puma', logo: 'images/brands/puma.png' },
-  { name: 'Vans' },
-  { name: 'Converse', logo: 'images/brands/converse.png' },
   { name: 'Reebok', logo: 'images/brands/reebok.png' },
+  { name: 'RS21', logo: 'images/brands/rs21.png' },
 ]
 
 const brandByName = new Map(

@@ -1,0 +1,6 @@
+# No indexar fotos de productos ni temporales del import (ahorra contexto/tokens)
+public/images/products/**
+.tmp-pdf-import/**
+**/*.pdf
+dist/**
+node_modules/**

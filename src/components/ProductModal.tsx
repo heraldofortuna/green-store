@@ -1,7 +1,14 @@
 import { useEffect, useState } from 'react'
 import { formatPrice, type Product } from '../data/products'
+import { asset } from '../lib/assets'
 import { sizeInquiryMessage, whatsappUrl } from '../lib/whatsapp'
 import { BrandMark } from './BrandMark'
+
+function productImage(src: string) {
+  if (!src) return ''
+  if (/^https?:\/\//i.test(src)) return src
+  return asset(src)
+}
 
 interface ProductModalProps {
   product: Product | null
@@ -39,7 +46,7 @@ export function ProductModal({ product, onClose, onInquire }: ProductModalProps)
       ? undefined
       : whatsappUrl(
           sizeInquiryMessage(
-            product.id,
+            product.code || product.id,
             product.brand,
             product.name,
             product.model,
@@ -65,8 +72,19 @@ export function ProductModal({ product, onClose, onInquire }: ProductModalProps)
           ×
         </button>
 
-        <div className="modal-media">
-          <img src={product.image} alt={product.name} />
+        <div
+          className={
+            product.image ? 'modal-media' : 'modal-media is-placeholder'
+          }
+        >
+          <img
+            src={
+              product.image
+                ? productImage(product.image)
+                : asset('images/logo-green.png')
+            }
+            alt={product.name}
+          />
         </div>
 
         <div className="modal-body">
@@ -77,10 +95,10 @@ export function ProductModal({ product, onClose, onInquire }: ProductModalProps)
             {product.name}
           </h2>
           <p className="modal-meta">
-            {product.category} · {product.gender} · Modelo {product.model}
+            {product.category} · {product.gender}
           </p>
           <p className="modal-price">{formatPrice(product.price)}</p>
-          <p className="modal-copy">{product.description}</p>
+          <p className="modal-copy">Código {product.code || product.id}</p>
 
           <div className="modal-block">
             <p className="modal-label">Colores</p>

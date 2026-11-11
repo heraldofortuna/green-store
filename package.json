@@ -8,9 +8,11 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "deploy": "npm run build && gh-pages -d dist -b gh-pages"
+    "deploy": "npm run build && gh-pages -d dist -b gh-pages",
+    "import:catalog": "node scripts/import-catalog.mjs"
   },
   "dependencies": {
+    "@tanstack/react-virtual": "^3.14.26",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
   },
@@ -19,8 +21,10 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
+    "canvas": "^3.2.3",
     "gh-pages": "^6.3.0",
     "oxlint": "^1.90.0",
+    "pdfjs-dist": "^5.6.205",
     "typescript": "~7.0.2",
     "vite": "^8.3.6"
   }
