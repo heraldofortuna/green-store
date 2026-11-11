@@ -398,7 +398,7 @@ export function formatPrice(price: number): string {
 `
 }
 
-async function importOne(entry) {
+async function importOne(entry, seq) {
   const brandKey = slugify(entry.brand)
   const workDir = path.join(TMP_DIR, brandKey + '-' + Date.now())
   fs.mkdirSync(workDir, { recursive: true })
@@ -408,11 +408,16 @@ async function importOne(entry) {
   const list = runPdfImagesList(entry.file)
   extractPdfImages(entry.file, prefix)
 
-  // Map extracted files in order (pdfimages -all order matches -list order)
+  // Map extracted files in pdfimages order (numeric index, NOT lexical:
+  // lexical puts img-1000 before img-112 and breaks alignment past 999).
   const extracted = fs
     .readdirSync(workDir)
     .filter((f) => /\.(jpg|jpeg|png)$/i.test(f))
-    .sort()
+    .sort((a, b) => {
+      const na = Number(a.match(/(\d+)/)?.[1] ?? 0)
+      const nb = Number(b.match(/(\d+)/)?.[1] ?? 0)
+      return na - nb
+    })
 
   if (extracted.length !== list.length) {
     console.warn(
@@ -434,7 +439,9 @@ async function importOne(entry) {
     if (size && !isProductPhoto(size.width, size.height)) continue
 
     photoCount++
-    const fileName = `${brandKey}-p${String(meta.page).padStart(2, '0')}-${String(photoCount).padStart(3, '0')}${path.extname(src).toLowerCase()}`
+    seq.n += 1
+    // Global seq avoids línea/liquidación overwriting the same adidas-pXX-YYY name.
+    const fileName = `${brandKey}-${String(seq.n).padStart(4, '0')}${path.extname(src).toLowerCase()}`
     const dest = path.join(OUT_DIR, fileName)
     fs.copyFileSync(src, dest)
     if (!photosByPage.has(meta.page)) photosByPage.set(meta.page, [])
@@ -491,9 +498,10 @@ async function main() {
   }
 
   const imported = []
+  const photoSeq = { n: 0 }
   for (const entry of pdfJobs) {
     console.log(`\n→ ${entry.brand}: ${path.basename(entry.file)}`)
-    const items = await importOne(entry)
+    const items = await importOne(entry, photoSeq)
     console.log(`   productos: ${items.length}`)
     imported.push(...items)
   }
