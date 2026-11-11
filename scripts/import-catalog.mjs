@@ -295,6 +295,8 @@ function buildProduct({ skuItem, catItem, nameItem, priceRow, sizesItem, default
   if (!name) return null
   const brand = resolveBrand(defaultBrand, name)
   const code = skuItem.str.toUpperCase()
+  // Markup comercial fijo sobre Precio Emprendedor del PDF.
+  const PRICE_MARKUP = 15
 
   return {
     id: slugify(`${brand}-${code}`),
@@ -304,7 +306,7 @@ function buildProduct({ skuItem, catItem, nameItem, priceRow, sizesItem, default
     model: name,
     category: mapCategory(catItem.str),
     gender: mapGender(catItem.str),
-    price: emprendedor,
+    price: Math.round((emprendedor + PRICE_MARKUP) * 100) / 100,
     sizes,
     colors: ['Único'],
     image: '',

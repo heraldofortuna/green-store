@@ -74,48 +74,54 @@ function App() {
 
       <main>
         <Hero onExplore={scrollToCatalog} />
-        <BrandStrip />
 
-        <section className="catalog" id="catalogo" ref={catalogRef}>
-          <div className="catalog-inner">
-            <Filters
-              filters={filters}
-              onChange={setFilters}
-              resultCount={filtered.length}
-            />
-            <ProductGrid products={filtered} onOpen={setSelected} />
-          </div>
-        </section>
+        <div className="site-below-hero">
+          <BrandStrip />
 
-        <section className="contact" id="contacto">
-          <div className="contact-inner">
-            <img
-              src={asset('images/logo-green.png')}
-              alt="GREEN"
-              className="contact-logo"
-            />
-            <h2>¿Buscas un modelo en particular?</h2>
-            <p>
-              Escríbenos por WhatsApp y te confirmamos stock por marca, modelo
-              y talla.
-            </p>
-            <div className="hero-cta">
-              <a
-                className="btn btn-primary"
-                href={whatsappUrl(genericInquiryMessage)}
-                target="_blank"
-                rel="noreferrer"
-              >
-                WhatsApp
-              </a>
+          <section className="catalog" id="catalogo" ref={catalogRef}>
+            <div className="catalog-inner">
+              <Filters
+                filters={filters}
+                onChange={setFilters}
+                resultCount={filtered.length}
+              />
+              <ProductGrid products={filtered} onOpen={setSelected} />
             </div>
-          </div>
-        </section>
-      </main>
+          </section>
 
-      <footer className="site-footer">
-        <p>© {new Date().getFullYear()} GREEN · Catálogo digital de zapatillas</p>
-      </footer>
+          <section className="contact" id="contacto">
+            <div className="contact-inner">
+              <img
+                src={asset('images/logo-green.png')}
+                alt="GREEN"
+                className="contact-logo"
+              />
+              <h2>¿Buscas un modelo en particular?</h2>
+              <p>
+                Escríbenos por WhatsApp y te confirmamos stock por marca, modelo
+                y talla.
+              </p>
+              <div className="hero-cta">
+                <a
+                  className="btn btn-primary"
+                  href={whatsappUrl(genericInquiryMessage)}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  WhatsApp
+                </a>
+              </div>
+            </div>
+          </section>
+
+          <footer className="site-footer">
+            <p>
+              © {new Date().getFullYear()} GREEN · Catálogo digital de
+              zapatillas
+            </p>
+          </footer>
+        </div>
+      </main>
 
       <ProductModal
         product={selected}

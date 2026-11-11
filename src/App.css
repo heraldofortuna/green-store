@@ -1,5 +1,21 @@
 .app-shell {
   min-height: 100vh;
+  background: #050505;
+}
+
+/* Gradiente desde marcas hacia abajo; tramo inicial negro uniforme (sin glow lateral). */
+.site-below-hero {
+  background:
+    radial-gradient(ellipse 75% 50% at 50% 48%, rgba(164, 208, 55, 0.12), transparent 62%),
+    radial-gradient(ellipse 60% 40% at 70% 72%, rgba(45, 125, 50, 0.14), transparent 58%),
+    linear-gradient(
+      180deg,
+      #050505 0%,
+      #050505 22%,
+      #070a05 40%,
+      #0a1207 62%,
+      #081008 100%
+    );
 }
 
 .promo-banner {
@@ -81,8 +97,14 @@
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(180deg, rgba(0, 0, 0, 0.35) 0%, rgba(0, 0, 0, 0.72) 58%, #050505 100%),
-    radial-gradient(circle at 50% 28%, rgba(164, 208, 55, 0.18), transparent 42%);
+    linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.4) 0%,
+      rgba(0, 0, 0, 0.78) 48%,
+      #050505 78%,
+      #050505 100%
+    ),
+    radial-gradient(circle at 50% 22%, rgba(164, 208, 55, 0.14), transparent 38%);
 }
 
 .hero-content {
