@@ -87,9 +87,19 @@ const PDFS = [
 
 const SKU_RE = /^[A-Z0-9][A-Z0-9-]{4,}$/i
 const SIZE_RE = /^\d{2}(?:\.\d)?(?:\s*\/\s*\d{2}(?:\.\d)?)+$/
+const SINGLE_SIZE_RE = /^(3[5-9]|4[0-9]|50)(?:\.\d)?$/
 const PRICE_RE = /^\d{2,4}\.\d{2}$/
+
+function isSizeToken(str) {
+  const normalized = str.replace(/\s+/g, ' ')
+  return SIZE_RE.test(normalized) || SINGLE_SIZE_RE.test(normalized)
+}
 const CAT_RE =
-  /^(TRAIL-?RUNNING|RUNNING|URBANO|TRAINING|BASQUET|BASKETBALL|OUTDOOR|SPORTSWEAR|PLATAFORMA|CASUAL|FUTBOL|FÚTBOL|TENIS|SANDALIAS|ZAPATILLAS|LIFESTYLE)\s*-\s*(HOMBRE|MUJER|NIÑOS|NINOS|UNISEX)$/i
+  /^(TRAIL-?RUNNING|RUNNING|URBANO|TRAINING|BASQUET|BASKETBALL|OUTDOOR|SPORTSWEAR|PLATAFORMA|CASUAL|FUTBOL|FÚTBOL|CHIMPUNES|TENIS|SANDALIAS|ZAPATILLAS|LIFESTYLE)\s*-\s*(HOMBRE|MUJER|NIÑOS|NINOS|UNISEX)$/i
+// Nike: AA1234-001 · Adidas: JQ0601 · Reebok/RS21: 100272330
+const NIKE_SKU_RE = /^[A-Z]{1,3}\d{3,5}-\d{2,4}$/i
+const ADIDAS_SKU_RE = /^[A-Z]{2}\d{3,5}$/i
+const NUMERIC_SKU_RE = /^\d{6,12}$/
 
 function mapGender(raw) {
   const g = raw
@@ -108,6 +118,9 @@ function mapCategory(raw) {
   if (c.includes('BASQUET') || c.includes('BASKET')) return 'Basketball'
   if (c.includes('TRAIN')) return 'Training'
   if (c.includes('OUTDOOR') || c.includes('PLATAFORMA')) return 'Outdoor'
+  if (c.includes('FUTBOL') || c.includes('FÚTBOL') || c.includes('CHIMPUNES')) {
+    return 'Outdoor'
+  }
   return 'Lifestyle'
 }
 
@@ -210,108 +223,248 @@ async function getPageTextItems(page) {
     }))
 }
 
-function clusterProducts(items, defaultBrand) {
-  const skus = items.filter(
-    (i) => SKU_RE.test(i.str) && i.str.length >= 5 && !PRICE_RE.test(i.str),
+function isSkuToken(str, brand) {
+  if (!str || PRICE_RE.test(str) || CAT_RE.test(str)) return false
+  if (SIZE_RE.test(str.replace(/\s+/g, ' '))) return false
+  if (/^ZAP\b/i.test(str)) return false
+  const b = (brand || '').toLowerCase()
+  if (b === 'nike') return NIKE_SKU_RE.test(str)
+  if (b === 'adidas') return ADIDAS_SKU_RE.test(str) || NIKE_SKU_RE.test(str)
+  if (b === 'reebok' || b === 'rs21' || b === 'champion') {
+    return NUMERIC_SKU_RE.test(str) || NIKE_SKU_RE.test(str)
+  }
+  return (
+    NIKE_SKU_RE.test(str) ||
+    ADIDAS_SKU_RE.test(str) ||
+    NUMERIC_SKU_RE.test(str) ||
+    (SKU_RE.test(str) && str.length >= 5)
   )
-  const products = []
+}
 
-  for (const skuItem of skus) {
-    const sameBand = items.filter((i) => Math.abs(i.y - skuItem.y) < 260)
+function cleanProductName(str) {
+  return str
+    .replace(/^ZAP\s+NIK\s+[A-Z0-9-]+\s+/i, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
 
-    const sizesItem =
-      sameBand.find(
-        (i) =>
-          SIZE_RE.test(i.str.replace(/\s+/g, ' ')) &&
-          Math.abs(i.y - skuItem.y) < 40,
-      ) || sameBand.find((i) => SIZE_RE.test(i.str.replace(/\s+/g, ' ')))
+function isNameToken(str) {
+  if (!str || str.length < 3) return false
+  if (PRICE_RE.test(str) || CAT_RE.test(str)) return false
+  if (isSizeToken(str)) return false
+  if (/^\d+$/.test(str)) return false
+  if (NIKE_SKU_RE.test(str) || ADIDAS_SKU_RE.test(str) || NUMERIC_SKU_RE.test(str)) {
+    return false
+  }
+  return /[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/.test(str)
+}
 
-    const catItem = sameBand
-      .filter((i) => CAT_RE.test(i.str))
+function parseSizes(raw) {
+  return (raw || '')
+    .split('/')
+    .map((s) => Number(s.trim()))
+    .filter((n) => !Number.isNaN(n) && n >= 20 && n <= 50)
+}
+
+function findPriceRows(items) {
+  const priceLines = new Map()
+  for (const i of items) {
+    if (!PRICE_RE.test(i.str)) continue
+    const key = Math.round(i.y)
+    if (!priceLines.has(key)) priceLines.set(key, [])
+    priceLines.get(key).push(i)
+  }
+  const rows = []
+  for (const row of priceLines.values()) {
+    if (row.length < 2) continue
+    const sorted = [...row].sort((a, b) => a.x - b.x)
+    const avgX = sorted.reduce((s, p) => s + p.x, 0) / sorted.length
+    const avgY = sorted.reduce((s, p) => s + p.y, 0) / sorted.length
+    rows.push({ items: sorted, x: avgX, y: avgY })
+  }
+  return rows
+}
+
+function buildProduct({ skuItem, catItem, nameItem, priceRow, sizesItem, defaultBrand }) {
+  const prices = priceRow.items.map((p) => Number(p.str))
+  const emprendedor = prices.length >= 2 ? prices[1] : prices[0]
+  const sizes = parseSizes(sizesItem?.str)
+  if (!sizes.length || !emprendedor) return null
+
+  const name = cleanProductName(nameItem.str)
+  if (!name) return null
+  const brand = resolveBrand(defaultBrand, name)
+  const code = skuItem.str.toUpperCase()
+
+  return {
+    id: slugify(`${brand}-${code}`),
+    code,
+    name,
+    brand,
+    model: name,
+    category: mapCategory(catItem.str),
+    gender: mapGender(catItem.str),
+    price: emprendedor,
+    sizes,
+    colors: ['Único'],
+    image: '',
+    description: `${brand} ${name}. Código ${code}.`,
+    x: (skuItem.x + nameItem.x) / 2,
+    y: (skuItem.y + nameItem.y) / 2,
+    page: 0,
+  }
+}
+
+/**
+ * Catálogos Fritz (Nike/Adidas/Reebok): en cada fila el SKU está en una columna
+ * y cat/nombre/precio en la otra. Empareje por bandas horizontales en cruz.
+ */
+function clusterCrossColumnProducts(items, defaultBrand) {
+  const midX =
+    items.reduce((s, i) => s + i.x, 0) / Math.max(items.length, 1) || 300
+
+  const skus = items
+    .filter((i) => isSkuToken(i.str, defaultBrand))
+    .sort((a, b) => b.y - a.y || a.x - b.x)
+
+  const priceRows = findPriceRows(items)
+  const cats = items.filter((i) => CAT_RE.test(i.str))
+  const names = items.filter((i) => isNameToken(i.str))
+  const sizeItems = items.filter((i) => isSizeToken(i.str))
+
+  const bodies = []
+  for (const priceRow of priceRows) {
+    const catItem = cats
+      .filter((c) => c.y > priceRow.y && c.y < priceRow.y + 120)
       .sort(
         (a, b) =>
-          Math.hypot(a.x - skuItem.x, a.y - skuItem.y) -
-          Math.hypot(b.x - skuItem.x, b.y - skuItem.y),
+          Math.hypot(a.x - priceRow.x, a.y - (priceRow.y + 60)) -
+          Math.hypot(b.x - priceRow.x, b.y - (priceRow.y + 60)),
       )[0]
+    if (!catItem) continue
 
-    const priceLines = new Map()
-    for (const i of sameBand) {
-      if (!PRICE_RE.test(i.str)) continue
-      const key = Math.round(i.y)
-      if (!priceLines.has(key)) priceLines.set(key, [])
-      priceLines.get(key).push(i)
+    const nameItem = names
+      .filter(
+        (n) =>
+          n.y < catItem.y &&
+          n.y > priceRow.y &&
+          Math.abs(n.x - catItem.x) < 160,
+      )
+      .sort(
+        (a, b) =>
+          Math.hypot(a.x - catItem.x, a.y - (catItem.y - 25)) -
+          Math.hypot(b.x - catItem.x, b.y - (catItem.y - 25)),
+      )[0]
+    if (!nameItem) continue
+
+    // Tallas van con el body (misma columna), no con el SKU cruzado.
+    const bodySideLeft = priceRow.x < midX
+    const sizesItem = sizeItems
+      .filter((s) => Math.abs(s.y - priceRow.y) < 220)
+      .sort((a, b) => {
+        const aSame = a.x < midX === bodySideLeft ? 0 : 1
+        const bSame = b.x < midX === bodySideLeft ? 0 : 1
+        if (aSame !== bSame) return aSame - bSame
+        return (
+          Math.hypot(a.x - priceRow.x, a.y - priceRow.y) -
+          Math.hypot(b.x - priceRow.x, b.y - priceRow.y)
+        )
+      })[0]
+
+    bodies.push({
+      catItem,
+      nameItem,
+      priceRow,
+      sizesItem,
+      x: priceRow.x,
+      y: nameItem.y,
+      side: priceRow.x < midX ? 'L' : 'R',
+    })
+  }
+
+  // Bandas horizontales (~1 fila de catálogo)
+  const bandYs = [...skus.map((s) => s.y), ...bodies.map((b) => b.y)].sort(
+    (a, b) => b - a,
+  )
+  const bands = []
+  for (const y of bandYs) {
+    const existing = bands.find((b) => Math.abs(b.y - y) < 140)
+    if (existing) {
+      existing.y = (existing.y * existing.n + y) / (existing.n + 1)
+      existing.n += 1
+    } else {
+      bands.push({ y, n: 1, skus: [], bodies: [] })
     }
+  }
 
-    let priceRow = null
-    let best = Infinity
-    for (const row of priceLines.values()) {
-      if (row.length < 2) continue
-      const sorted = [...row].sort((a, b) => a.x - b.x)
-      const avgY = sorted.reduce((s, p) => s + p.y, 0) / sorted.length
-      const score =
-        Math.abs(avgY - (skuItem.y - 150)) + (sorted.length === 3 ? 0 : 50)
-      if (score < best) {
-        best = score
-        priceRow = sorted
+  for (const sku of skus) {
+    const band = bands.sort(
+      (a, b) => Math.abs(a.y - sku.y) - Math.abs(b.y - sku.y),
+    )[0]
+    if (band && Math.abs(band.y - sku.y) < 160) band.skus.push(sku)
+  }
+  for (const body of bodies) {
+    const band = bands.sort(
+      (a, b) => Math.abs(a.y - body.y) - Math.abs(b.y - body.y),
+    )[0]
+    if (band && Math.abs(band.y - body.y) < 160) band.bodies.push(body)
+  }
+
+  const products = []
+  const usedSkus = new Set()
+  const usedBodies = new Set()
+
+  for (const band of bands.sort((a, b) => b.y - a.y)) {
+    const freeSkus = band.skus.filter((s) => !usedSkus.has(s.str))
+    const freeBodies = band.bodies.filter(
+      (b) => !usedBodies.has(`${b.nameItem.str}@${b.y}`),
+    )
+    if (!freeSkus.length || !freeBodies.length) continue
+
+    const pairs = []
+    if (freeSkus.length === 1 && freeBodies.length === 1) {
+      pairs.push([freeSkus[0], freeBodies[0]])
+    } else {
+      // Cruce de columnas: SKU L ↔ body R, SKU R ↔ body L
+      for (const sku of freeSkus) {
+        const skuSide = sku.x < midX ? 'L' : 'R'
+        const opposite = freeBodies
+          .filter((b) => b.side !== skuSide && !pairs.some(([, bb]) => bb === b))
+          .sort((a, b) => Math.abs(a.y - sku.y) - Math.abs(b.y - sku.y))[0]
+        const fallback = freeBodies
+          .filter((b) => !pairs.some(([, bb]) => bb === b))
+          .sort((a, b) => Math.abs(a.y - sku.y) - Math.abs(b.y - sku.y))[0]
+        const body = opposite || fallback
+        if (body) pairs.push([sku, body])
       }
     }
 
-    const nameCandidates = sameBand.filter(
-      (i) =>
-        !SKU_RE.test(i.str) &&
-        !SIZE_RE.test(i.str.replace(/\s+/g, ' ')) &&
-        !PRICE_RE.test(i.str) &&
-        !CAT_RE.test(i.str) &&
-        !/^\d+$/.test(i.str) &&
-        i.str.length >= 3,
-    )
+    for (const [skuItem, body] of pairs) {
+      const key = `${body.nameItem.str}@${body.y}`
+      if (usedSkus.has(skuItem.str) || usedBodies.has(key)) continue
+      const sizesItem =
+        body.sizesItem ||
+        sizeItems
+          .filter((s) => Math.abs(s.y - skuItem.y) < 50)
+          .sort(
+            (a, b) =>
+              Math.hypot(a.x - skuItem.x, a.y - skuItem.y) -
+              Math.hypot(b.x - skuItem.x, b.y - skuItem.y),
+          )[0]
 
-    let nameItem = null
-    if (catItem) {
-      nameItem = nameCandidates
-        .filter((i) => Math.abs(i.y - catItem.y) < 90)
-        .sort(
-          (a, b) =>
-            Math.hypot(a.x - catItem.x, a.y - (catItem.y - 30)) -
-            Math.hypot(b.x - catItem.x, b.y - (catItem.y - 30)),
-        )[0]
+      const product = buildProduct({
+        skuItem,
+        catItem: body.catItem,
+        nameItem: body.nameItem,
+        priceRow: body.priceRow,
+        sizesItem,
+        defaultBrand,
+      })
+      if (!product) continue
+      usedSkus.add(skuItem.str)
+      usedBodies.add(key)
+      products.push(product)
     }
-    if (!nameItem) {
-      nameItem = [...nameCandidates].sort((a, b) => b.str.length - a.str.length)[0]
-    }
-
-    if (!catItem || !priceRow || !nameItem) continue
-
-    const prices = priceRow.map((p) => Number(p.str))
-    const emprendedor = prices.length >= 2 ? prices[1] : prices[0]
-    const sizes = (sizesItem?.str || '')
-      .split('/')
-      .map((s) => Number(s.trim()))
-      .filter((n) => !Number.isNaN(n) && n >= 20 && n <= 50)
-
-    if (!sizes.length || !emprendedor) continue
-
-    const name = nameItem.str.replace(/\s+/g, ' ').trim()
-    const brand = resolveBrand(defaultBrand, name)
-    const code = skuItem.str.toUpperCase()
-
-    products.push({
-      id: slugify(`${brand}-${code}`),
-      code,
-      name,
-      brand,
-      model: name,
-      category: mapCategory(catItem.str),
-      gender: mapGender(catItem.str),
-      price: emprendedor,
-      sizes,
-      colors: ['Único'],
-      image: '',
-      description: `${brand} ${name}. Código ${code}.`,
-      x: (skuItem.x + nameItem.x) / 2,
-      y: (skuItem.y + nameItem.y) / 2,
-      page: 0,
-    })
   }
 
   const byCode = new Map()
@@ -319,6 +472,11 @@ function clusterProducts(items, defaultBrand) {
     if (!byCode.has(p.code)) byCode.set(p.code, p)
   }
   return [...byCode.values()]
+}
+
+function clusterProducts(items, defaultBrand) {
+  // Fritz Sport PDFs (Nike / Adidas / Reebok / RS21) usan el mismo layout cruzado.
+  return clusterCrossColumnProducts(items, defaultBrand)
 }
 
 function emitTs(products) {

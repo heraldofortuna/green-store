@@ -14,6 +14,7 @@ function productImage(src: string) {
 
 export function ProductCard({ product, onOpen }: ProductCardProps) {
   const hasImage = Boolean(product.image)
+  const sizeCount = product.sizes.length
 
   return (
     <article className="product-card">
@@ -44,7 +45,7 @@ export function ProductCard({ product, onOpen }: ProductCardProps) {
           <div className="product-footer">
             <span className="product-price">{formatPrice(product.price)}</span>
             <span className="product-sizes">
-              {product.sizes.length} tallas
+              {sizeCount === 1 ? '1 talla' : `${sizeCount} tallas`}
             </span>
           </div>
         </div>

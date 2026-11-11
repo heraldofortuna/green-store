@@ -30,9 +30,6 @@ export function Hero({ onExplore }: HeroProps) {
           <button type="button" className="btn btn-primary" onClick={onExplore}>
             Ver catálogo
           </button>
-          <a className="btn btn-ghost" href="#marcas">
-            Explorar marcas
-          </a>
         </div>
       </div>
     </section>

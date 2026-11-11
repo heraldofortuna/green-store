@@ -2,52 +2,55 @@
   min-height: 100vh;
 }
 
-.site-header {
+.promo-banner {
   position: sticky;
   top: 0;
   z-index: 40;
+  height: 60px;
+  overflow: hidden;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.85rem clamp(1rem, 4vw, 2.5rem);
-  background: rgba(5, 5, 5, 0.78);
-  border-bottom: 1px solid var(--border);
-  backdrop-filter: blur(16px);
+  background: linear-gradient(90deg, #0a1200 0%, #142008 45%, #0a1200 100%);
+  border-bottom: 1px solid rgba(164, 208, 55, 0.35);
+  color: #e8f7b8;
+  font-size: 0.92rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
-.brand-mark {
-  justify-self: start;
+.promo-banner-track {
+  display: flex;
+  align-items: center;
+  width: max-content;
+  gap: 3.5rem;
+  white-space: nowrap;
+  animation: promo-marquee-right 42s linear infinite;
+  will-change: transform;
+}
+
+.promo-banner-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.25rem;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .brand-logo {
   height: 42px;
   width: auto;
   object-fit: contain;
-}
-
-.site-nav {
-  display: flex;
-  gap: 0.35rem;
-  justify-content: flex-end;
-}
-
-.nav-link {
-  appearance: none;
-  border: 0;
-  background: transparent;
-  color: var(--text-muted);
-  padding: 0.55rem 0.9rem;
-  border-radius: 999px;
-  cursor: pointer;
-  transition: color 180ms ease, background 180ms ease;
-}
-
-.nav-link:hover,
-.nav-link:focus-visible {
-  color: var(--text);
-  background: var(--surface);
-  outline: none;
 }
 
 .hero {
@@ -711,6 +714,16 @@
   }
 }
 
+/* Parte desde -50% para que el loop hacia la derecha sea continuo. */
+@keyframes promo-marquee-right {
+  from {
+    transform: translate3d(-50%, 0, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
 @media (max-width: 1100px) {
   .filters-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -722,10 +735,6 @@
 }
 
 @media (max-width: 860px) {
-  .site-nav {
-    display: none;
-  }
-
   .modal-panel {
     grid-template-columns: 1fr;
   }
@@ -747,7 +756,11 @@
   }
 
   .hero-content {
-    padding-top: 5.5rem;
+    padding-top: 4rem;
+  }
+
+  .promo-banner {
+    font-size: 0.82rem;
   }
 }
 

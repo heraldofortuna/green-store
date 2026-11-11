@@ -1,10 +1,10 @@
 import { useMemo, useRef, useState } from 'react'
 import { BrandStrip } from './components/BrandStrip'
 import { Filters, type FilterState } from './components/Filters'
-import { Header } from './components/Header'
 import { Hero } from './components/Hero'
 import { ProductGrid } from './components/ProductGrid'
 import { ProductModal } from './components/ProductModal'
+import { PromoBanner } from './components/PromoBanner'
 import { products, type Product } from './data/products'
 import { asset } from './lib/assets'
 import { genericInquiryMessage, whatsappUrl } from './lib/whatsapp'
@@ -70,7 +70,7 @@ function App() {
 
   return (
     <div className="app-shell">
-      <Header onCatalogClick={scrollToCatalog} />
+      <PromoBanner />
 
       <main>
         <Hero onExplore={scrollToCatalog} />

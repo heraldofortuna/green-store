@@ -27,7 +27,8 @@ function useColumnCount() {
   return columns
 }
 
-const ROW_ESTIMATE = 390
+const CARD_GAP = 16
+const ROW_ESTIMATE = 390 + CARD_GAP
 
 export function ProductGrid({ products, onOpen }: ProductGridProps) {
   const columns = useColumnCount()
@@ -86,7 +87,9 @@ export function ProductGrid({ products, onOpen }: ProductGridProps) {
               }px)`,
               display: 'grid',
               gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
-              gap: '1rem',
+              gap: `${CARD_GAP}px`,
+              paddingBottom: `${CARD_GAP}px`,
+              boxSizing: 'border-box',
             }}
           >
             {rowProducts.map((product) => (
