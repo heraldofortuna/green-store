@@ -1,5 +1,4 @@
 import { useMemo, useRef, useState } from 'react'
-import { BrandStrip } from './components/BrandStrip'
 import { Filters, type FilterState } from './components/Filters'
 import { Hero } from './components/Hero'
 import { ProductGrid } from './components/ProductGrid'
@@ -76,8 +75,6 @@ function App() {
         <Hero onExplore={scrollToCatalog} />
 
         <div className="site-below-hero">
-          <BrandStrip />
-
           <section className="catalog" id="catalogo" ref={catalogRef}>
             <div className="catalog-inner">
               <Filters

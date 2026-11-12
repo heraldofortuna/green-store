@@ -1,3 +1,4 @@
+import { BrandMark } from './BrandMark'
 import { formatPrice, type Product } from '../data/products'
 import { asset } from '../lib/assets'
 
@@ -24,9 +25,19 @@ export function ProductCard({ product, onOpen }: ProductCardProps) {
         onClick={() => onOpen(product)}
         aria-label={`Ver ${product.brand} ${product.name}`}
       >
-        <div className={hasImage ? 'product-media' : 'product-media is-placeholder'}>
+        <div
+          className={
+            hasImage ? 'product-media' : 'product-media is-placeholder'
+          }
+        >
+          <BrandMark brand={product.brand} className="product-media-brand" />
           <img
-            src={hasImage ? productImage(product.image) : asset('images/logo-green.png')}
+            className="product-media-shot"
+            src={
+              hasImage
+                ? productImage(product.image)
+                : asset('images/logo-green.png')
+            }
             alt=""
             loading="lazy"
             decoding="async"
@@ -37,13 +48,24 @@ export function ProductCard({ product, onOpen }: ProductCardProps) {
         </div>
 
         <div className="product-body">
-          <p className="product-brand">{product.brand}</p>
           <h3 className="product-name">{product.name}</h3>
           <p className="product-meta">
             {product.category} · {product.gender}
           </p>
           <div className="product-footer">
-            <span className="product-price">{formatPrice(product.price)}</span>
+            <div className="product-prices">
+              <div className="product-price-row">
+                <span className="product-retail">
+                  {formatPrice(product.retailPrice)}
+                </span>
+                <span className="product-price">
+                  {formatPrice(product.price)}
+                </span>
+              </div>
+              <span className="product-wholesale">
+                Precio mayorista {formatPrice(product.wholesalePrice)}
+              </span>
+            </div>
             <span className="product-sizes">
               {sizeCount === 1 ? '1 talla' : `${sizeCount} tallas`}
             </span>

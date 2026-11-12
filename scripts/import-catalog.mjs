@@ -42,7 +42,7 @@ function loadExistingCatalog() {
 
 function stripInternalFields(products) {
   return products.map(
-    ({ id, code, name, brand, model, category, gender, price, sizes, colors, image, description }) => ({
+    ({
       id,
       code,
       name,
@@ -50,7 +50,24 @@ function stripInternalFields(products) {
       model,
       category,
       gender,
+      retailPrice,
       price,
+      wholesalePrice,
+      sizes,
+      colors,
+      image,
+      description,
+    }) => ({
+      id,
+      code,
+      name,
+      brand,
+      model,
+      category,
+      gender,
+      retailPrice,
+      price,
+      wholesalePrice,
       sizes,
       colors,
       image,
@@ -86,20 +103,62 @@ const PDFS = [
 ]
 
 const SKU_RE = /^[A-Z0-9][A-Z0-9-]{4,}$/i
-const SIZE_RE = /^\d{2}(?:\.\d)?(?:\s*\/\s*\d{2}(?:\.\d)?)+$/
-const SINGLE_SIZE_RE = /^(3[5-9]|4[0-9]|50)(?:\.\d)?$/
+// Tallas EU en catálogo Fritz: "40/ 41/ 42" o una sola talla "42".
+const SIZE_RANGE_RE = /^\d{2}(?:\.\d)?(?:\s*\/\s*\d{2}(?:\.\d)?)+$/
+const SINGLE_SIZE_RE = /^\d{2}(?:\.\d)?$/
 const PRICE_RE = /^\d{2,4}\.\d{2}$/
 
-function isSizeToken(str) {
-  const normalized = str.replace(/\s+/g, ' ')
-  return SIZE_RE.test(normalized) || SINGLE_SIZE_RE.test(normalized)
+function isSizeRangeToken(str) {
+  return SIZE_RANGE_RE.test(str.replace(/\s+/g, ' '))
 }
+
+function isSingleSizeToken(str) {
+  if (!SINGLE_SIZE_RE.test(str.replace(/\s+/g, ' '))) return false
+  const n = Number(str)
+  // EU realista en estos PDFs (niños ~20, adultos hasta ~48). "50" junto al SKU es stock.
+  return !Number.isNaN(n) && n >= 20 && n <= 48
+}
+
+function isSizeToken(str) {
+  return isSizeRangeToken(str) || isSingleSizeToken(str)
+}
+
+/** En Fritz, el número chico pegado al SKU es cantidad/stock, no talla. */
+function isStockBesideSku(item, skus) {
+  if (!SINGLE_SIZE_RE.test(item.str.replace(/\s+/g, ' '))) return false
+  return skus.some(
+    (sku) =>
+      Math.abs(sku.y - item.y) < 28 &&
+      Math.abs(sku.x - item.x) < 130 &&
+      Math.abs(sku.x - item.x) > 8,
+  )
+}
+
+function pickSizesForSku(skuItem, sizeItems, midX) {
+  const skuLeft = skuItem.x < midX
+  const opposite = sizeItems
+    .filter((s) => s.x < midX !== skuLeft && Math.abs(s.y - skuItem.y) < 55)
+    .sort((a, b) => {
+      const aRange = isSizeRangeToken(a.str) ? 0 : 1
+      const bRange = isSizeRangeToken(b.str) ? 0 : 1
+      if (aRange !== bRange) return aRange - bRange
+      return Math.abs(a.y - skuItem.y) - Math.abs(b.y - skuItem.y)
+    })
+  if (opposite[0]) return opposite[0]
+
+  // Fallback: misma banda, prioriza rangos con "/".
+  return sizeItems
+    .filter((s) => Math.abs(s.y - skuItem.y) < 55 && isSizeRangeToken(s.str))
+    .sort((a, b) => Math.abs(a.y - skuItem.y) - Math.abs(b.y - skuItem.y))[0]
+}
+// Cualquier "CATEGORIA - GENERO" del PDF Fritz (no hardcodear solo algunas).
 const CAT_RE =
-  /^(TRAIL-?RUNNING|RUNNING|URBANO|TRAINING|BASQUET|BASKETBALL|OUTDOOR|SPORTSWEAR|PLATAFORMA|CASUAL|FUTBOL|FÚTBOL|CHIMPUNES|TENIS|SANDALIAS|ZAPATILLAS|LIFESTYLE)\s*-\s*(HOMBRE|MUJER|NIÑOS|NINOS|UNISEX)$/i
-// Nike: AA1234-001 · Adidas: JQ0601 · Reebok/RS21: 100272330
+  /^[A-ZÁÉÍÓÚÜÑ0-9][A-ZÁÉÍÓÚÜÑ0-9 /+-]*\s*-\s*(HOMBRE|MUJER|NIÑOS|NINOS|UNISEX)$/i
+// Nike: AA1234-001 · Adidas: JQ0601 · Reebok: 100272330 · RS21: 11261-0125
 const NIKE_SKU_RE = /^[A-Z]{1,3}\d{3,5}-\d{2,4}$/i
 const ADIDAS_SKU_RE = /^[A-Z]{2}\d{3,5}$/i
 const NUMERIC_SKU_RE = /^\d{6,12}$/
+const RS21_SKU_RE = /^\d{4,6}-\d{3,4}$/
 
 function mapGender(raw) {
   const g = raw
@@ -112,16 +171,129 @@ function mapGender(raw) {
   return 'Unisex'
 }
 
+const ALLOWED_CATEGORIES = new Set([
+  'Running',
+  'Basketball',
+  'Training',
+  'Outdoor',
+  'Skate',
+  'Urbanas',
+  'Chimpunes',
+  'Sandalias',
+  'Tenis',
+  'Sportswear',
+  'Escolar',
+  'Terrex',
+])
+
 function mapCategory(raw) {
-  const c = raw.split('-')[0].trim().toUpperCase()
-  if (c.includes('RUN') || c.includes('TRAIL')) return 'Running'
+  const c = raw
+    .split('-')[0]
+    .trim()
+    .toUpperCase()
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+
+  // Sin fallback inventado: una entrada del PDF → una categoría.
+  if (c.includes('SANDALIA')) return 'Sandalias'
+  if (c.includes('TENIS')) return 'Tenis'
+  if (c.includes('TERREX')) return 'Terrex'
+  if (
+    c.includes('FUTBOL') ||
+    c.includes('CHIMPUN') ||
+    c.includes('SOCCER') ||
+    c.includes('FOOTBALL')
+  ) {
+    return 'Chimpunes'
+  }
   if (c.includes('BASQUET') || c.includes('BASKET')) return 'Basketball'
   if (c.includes('TRAIN')) return 'Training'
-  if (c.includes('OUTDOOR') || c.includes('PLATAFORMA')) return 'Outdoor'
-  if (c.includes('FUTBOL') || c.includes('FÚTBOL') || c.includes('CHIMPUNES')) {
+  if (c.includes('RUN') || c.includes('TRAIL')) return 'Running'
+  if (
+    c.includes('OUTDOOR') ||
+    c.includes('PLATAFORMA') ||
+    c.includes('HIKING')
+  ) {
     return 'Outdoor'
   }
-  return 'Lifestyle'
+  if (c.includes('SKATE')) return 'Skate'
+  if (c.includes('SPORTSWEAR')) return 'Sportswear'
+  if (c.includes('ESCOLAR')) return 'Escolar'
+  if (
+    c.includes('URBAN') ||
+    c.includes('CASUAL') ||
+    c.includes('ORIGINAL')
+  ) {
+    return 'Urbanas'
+  }
+  return null
+}
+
+/**
+ * Guardas anti-regresión: stock≠talla, nombres limpios, categorías válidas.
+ * Si falla, el import aborta y NO escribe products.ts / catalog.json.
+ */
+function validateCatalog(products) {
+  const errors = []
+  const sizeCounts = new Map()
+  let singleSizeOnly = 0
+
+  for (const p of products) {
+    if (!p.name || p.name.trim().length < 2) {
+      errors.push(`${p.code}: nombre vacío o inválido`)
+    }
+    if (isSizeToken(p.name) || PRICE_RE.test(p.name)) {
+      errors.push(`${p.code}: nombre parece talla/precio (${p.name})`)
+    }
+    if (!ALLOWED_CATEGORIES.has(p.category)) {
+      errors.push(`${p.code}: categoría no permitida (${p.category})`)
+    }
+    if (p.category === 'Lifestyle' || p.category === 'Casual') {
+      errors.push(
+        `${p.code}: categoría inventada (${p.category}); usar solo las del PDF`,
+      )
+    }
+    if (!Array.isArray(p.sizes) || !p.sizes.length) {
+      errors.push(`${p.code}: sin tallas`)
+      continue
+    }
+    for (const s of p.sizes) {
+      if (typeof s !== 'number' || Number.isNaN(s) || s < 20 || s > 48) {
+        errors.push(`${p.code}: talla fuera de rango EU 20–48 (${s})`)
+      }
+      if (s === 50) {
+        errors.push(
+          `${p.code}: talla 50 inválida (en Fritz "50" junto al SKU es stock)`,
+        )
+      }
+      sizeCounts.set(s, (sizeCounts.get(s) || 0) + 1)
+    }
+    if (p.sizes.length === 1) singleSizeOnly += 1
+  }
+
+  // Regresión típica: muchos productos con solo "50" (stock mal leído).
+  const only50 = products.filter(
+    (p) => p.sizes.length === 1 && p.sizes[0] === 50,
+  ).length
+  if (only50 > 0) {
+    errors.push(
+      `${only50} productos con única talla 50 (casi seguro stock, no talla)`,
+    )
+  }
+
+  // Si >35% del catálogo quedó en 1 sola talla, algo del pairing se rompió.
+  if (products.length >= 40 && singleSizeOnly / products.length > 0.35) {
+    errors.push(
+      `demasiados productos con 1 sola talla (${singleSizeOnly}/${products.length}); revisar pairing de tallas`,
+    )
+  }
+
+  if (errors.length) {
+    const sample = errors.slice(0, 12).join('\n  - ')
+    throw new Error(
+      `Validación de catálogo falló (${errors.length} error(es)):\n  - ${sample}`,
+    )
+  }
 }
 
 function resolveBrand(defaultBrand, name) {
@@ -225,18 +397,22 @@ async function getPageTextItems(page) {
 
 function isSkuToken(str, brand) {
   if (!str || PRICE_RE.test(str) || CAT_RE.test(str)) return false
-  if (SIZE_RE.test(str.replace(/\s+/g, ' '))) return false
+  if (isSizeToken(str)) return false
   if (/^ZAP\b/i.test(str)) return false
   const b = (brand || '').toLowerCase()
   if (b === 'nike') return NIKE_SKU_RE.test(str)
   if (b === 'adidas') return ADIDAS_SKU_RE.test(str) || NIKE_SKU_RE.test(str)
-  if (b === 'reebok' || b === 'rs21' || b === 'champion') {
+  if (b === 'rs21') {
+    return RS21_SKU_RE.test(str) || NUMERIC_SKU_RE.test(str)
+  }
+  if (b === 'reebok' || b === 'champion') {
     return NUMERIC_SKU_RE.test(str) || NIKE_SKU_RE.test(str)
   }
   return (
     NIKE_SKU_RE.test(str) ||
     ADIDAS_SKU_RE.test(str) ||
     NUMERIC_SKU_RE.test(str) ||
+    RS21_SKU_RE.test(str) ||
     (SKU_RE.test(str) && str.length >= 5)
   )
 }
@@ -253,7 +429,12 @@ function isNameToken(str) {
   if (PRICE_RE.test(str) || CAT_RE.test(str)) return false
   if (isSizeToken(str)) return false
   if (/^\d+$/.test(str)) return false
-  if (NIKE_SKU_RE.test(str) || ADIDAS_SKU_RE.test(str) || NUMERIC_SKU_RE.test(str)) {
+  if (
+    NIKE_SKU_RE.test(str) ||
+    ADIDAS_SKU_RE.test(str) ||
+    NUMERIC_SKU_RE.test(str) ||
+    RS21_SKU_RE.test(str)
+  ) {
     return false
   }
   return /[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/.test(str)
@@ -263,7 +444,7 @@ function parseSizes(raw) {
   return (raw || '')
     .split('/')
     .map((s) => Number(s.trim()))
-    .filter((n) => !Number.isNaN(n) && n >= 20 && n <= 50)
+    .filter((n) => !Number.isNaN(n) && n >= 20 && n <= 48)
 }
 
 function findPriceRows(items) {
@@ -285,18 +466,28 @@ function findPriceRows(items) {
   return rows
 }
 
+function withMarkup(value) {
+  // Markup comercial fijo (+S/15) sobre Emprendedor y Mayorista del PDF.
+  const PRICE_MARKUP = 15
+  return Math.round((value + PRICE_MARKUP) * 100) / 100
+}
+
 function buildProduct({ skuItem, catItem, nameItem, priceRow, sizesItem, defaultBrand }) {
   const prices = priceRow.items.map((p) => Number(p.str))
+  // PDF: Retail / Emprendedor / Mayorista
+  const retail = prices[0]
   const emprendedor = prices.length >= 2 ? prices[1] : prices[0]
+  const mayorista =
+    prices.length >= 3 ? prices[2] : prices.length >= 2 ? prices[1] : prices[0]
   const sizes = parseSizes(sizesItem?.str)
-  if (!sizes.length || !emprendedor) return null
+  if (!sizes.length || !emprendedor || !retail) return null
 
   const name = cleanProductName(nameItem.str)
   if (!name) return null
+  const category = mapCategory(catItem.str)
+  if (!category) return null
   const brand = resolveBrand(defaultBrand, name)
   const code = skuItem.str.toUpperCase()
-  // Markup comercial fijo sobre Precio Emprendedor del PDF.
-  const PRICE_MARKUP = 15
 
   return {
     id: slugify(`${brand}-${code}`),
@@ -304,9 +495,12 @@ function buildProduct({ skuItem, catItem, nameItem, priceRow, sizesItem, default
     name,
     brand,
     model: name,
-    category: mapCategory(catItem.str),
+    category,
     gender: mapGender(catItem.str),
-    price: Math.round((emprendedor + PRICE_MARKUP) * 100) / 100,
+    // Retail tal cual en el PDF (sin markup).
+    retailPrice: Math.round(retail * 100) / 100,
+    price: withMarkup(emprendedor),
+    wholesalePrice: withMarkup(mayorista),
     sizes,
     colors: ['Único'],
     image: '',
@@ -332,7 +526,11 @@ function clusterCrossColumnProducts(items, defaultBrand) {
   const priceRows = findPriceRows(items)
   const cats = items.filter((i) => CAT_RE.test(i.str))
   const names = items.filter((i) => isNameToken(i.str))
-  const sizeItems = items.filter((i) => isSizeToken(i.str))
+  // Ignora el número de stock pegado al SKU (p. ej. "50"); las tallas van
+  // en la columna opuesta, en la misma fila del código.
+  const sizeItems = items.filter(
+    (i) => isSizeToken(i.str) && !isStockBesideSku(i, skus),
+  )
 
   const bodies = []
   for (const priceRow of priceRows) {
@@ -359,25 +557,10 @@ function clusterCrossColumnProducts(items, defaultBrand) {
       )[0]
     if (!nameItem) continue
 
-    // Tallas van con el body (misma columna), no con el SKU cruzado.
-    const bodySideLeft = priceRow.x < midX
-    const sizesItem = sizeItems
-      .filter((s) => Math.abs(s.y - priceRow.y) < 220)
-      .sort((a, b) => {
-        const aSame = a.x < midX === bodySideLeft ? 0 : 1
-        const bSame = b.x < midX === bodySideLeft ? 0 : 1
-        if (aSame !== bSame) return aSame - bSame
-        return (
-          Math.hypot(a.x - priceRow.x, a.y - priceRow.y) -
-          Math.hypot(b.x - priceRow.x, b.y - priceRow.y)
-        )
-      })[0]
-
     bodies.push({
       catItem,
       nameItem,
       priceRow,
-      sizesItem,
       x: priceRow.x,
       y: nameItem.y,
       side: priceRow.x < midX ? 'L' : 'R',
@@ -444,15 +627,7 @@ function clusterCrossColumnProducts(items, defaultBrand) {
     for (const [skuItem, body] of pairs) {
       const key = `${body.nameItem.str}@${body.y}`
       if (usedSkus.has(skuItem.str) || usedBodies.has(key)) continue
-      const sizesItem =
-        body.sizesItem ||
-        sizeItems
-          .filter((s) => Math.abs(s.y - skuItem.y) < 50)
-          .sort(
-            (a, b) =>
-              Math.hypot(a.x - skuItem.x, a.y - skuItem.y) -
-              Math.hypot(b.x - skuItem.x, b.y - skuItem.y),
-          )[0]
+      const sizesItem = pickSizesForSku(skuItem, sizeItems, midX)
 
       const product = buildProduct({
         skuItem,
@@ -484,13 +659,18 @@ function clusterProducts(items, defaultBrand) {
 function emitTs(products) {
   const brands = [...new Set(products.map((p) => p.brand))].sort()
   return `export type Category =
-  | 'Lifestyle'
   | 'Running'
   | 'Basketball'
   | 'Training'
   | 'Outdoor'
   | 'Skate'
-  | 'Casual'
+  | 'Urbanas'
+  | 'Chimpunes'
+  | 'Sandalias'
+  | 'Tenis'
+  | 'Sportswear'
+  | 'Escolar'
+  | 'Terrex'
 
 export type Gender = 'Hombre' | 'Mujer' | 'Unisex' | 'Niños'
 
@@ -502,7 +682,9 @@ export interface Product {
   model: string
   category: Category
   gender: Gender
+  retailPrice: number
   price: number
+  wholesalePrice: number
   sizes: number[]
   colors: string[]
   image: string
@@ -513,12 +695,18 @@ export interface Product {
 export const brands = ${JSON.stringify(brands, null, 2)} as const
 
 export const categories: Category[] = [
-  'Lifestyle',
   'Running',
+  'Urbanas',
+  'Chimpunes',
+  'Sportswear',
   'Basketball',
   'Training',
   'Outdoor',
-  'Casual',
+  'Terrex',
+  'Sandalias',
+  'Tenis',
+  'Escolar',
+  'Skate',
 ]
 
 export const genders: Gender[] = ['Hombre', 'Mujer', 'Unisex', 'Niños']
@@ -538,7 +726,9 @@ ${products
     model: ${JSON.stringify(p.model)},
     category: ${JSON.stringify(p.category)},
     gender: ${JSON.stringify(p.gender)},
+    retailPrice: ${p.retailPrice},
     price: ${p.price},
+    wholesalePrice: ${p.wholesalePrice},
     sizes: ${JSON.stringify(p.sizes)},
     colors: ${JSON.stringify(p.colors)},
     image: ${JSON.stringify(p.image)},
@@ -695,6 +885,17 @@ async function main() {
   )
 
   const clean = stripInternalFields(unique)
+  validateCatalog(clean)
+
+  const sizeSet = [...new Set(clean.flatMap((p) => p.sizes))].sort(
+    (a, b) => a - b,
+  )
+  const categoryCounts = Object.fromEntries(
+    [...ALLOWED_CATEGORIES]
+      .map((c) => [c, clean.filter((p) => p.category === c).length])
+      .filter(([, n]) => n > 0),
+  )
+
   fs.writeFileSync(JSON_OUT, JSON.stringify(clean, null, 2))
   fs.writeFileSync(DATA_OUT, emitTs(clean))
   console.log(`\n✓ ${clean.length} products → ${DATA_OUT}`)
@@ -713,6 +914,8 @@ async function main() {
     '/',
     clean.length,
   )
+  console.log('tallas EU:', sizeSet[0], '→', sizeSet[sizeSet.length - 1])
+  console.log('categorías:', categoryCounts)
 }
 
 main().catch((error) => {

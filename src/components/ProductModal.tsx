@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react'
 import { formatPrice, type Product } from '../data/products'
 import { asset } from '../lib/assets'
-import { sizeInquiryMessage, whatsappUrl } from '../lib/whatsapp'
+import {
+  sizeInquiryMessage,
+  whatsappUrl,
+  type PriceType,
+} from '../lib/whatsapp'
 import { BrandMark } from './BrandMark'
 
 function productImage(src: string) {
@@ -16,12 +20,24 @@ interface ProductModalProps {
   onInquire: (product: Product, size: number) => void
 }
 
-export function ProductModal({ product, onClose, onInquire }: ProductModalProps) {
+export function ProductModal({
+  product,
+  onClose,
+  onInquire,
+}: ProductModalProps) {
   const [size, setSize] = useState<number | null>(null)
+  const [priceType, setPriceType] = useState<PriceType>('emprendedor')
 
   useEffect(() => {
-    setSize(null)
-  }, [product?.id])
+    if (!product) {
+      setSize(null)
+      setPriceType('emprendedor')
+      return
+    }
+
+    setSize(product.sizes.length === 1 ? product.sizes[0] : null)
+    setPriceType('emprendedor')
+  }, [product])
 
   useEffect(() => {
     if (!product) return
@@ -41,6 +57,9 @@ export function ProductModal({ product, onClose, onInquire }: ProductModalProps)
 
   if (!product) return null
 
+  const selectedAmount =
+    priceType === 'mayorista' ? product.wholesalePrice : product.price
+
   const consultUrl =
     size === null
       ? undefined
@@ -51,6 +70,8 @@ export function ProductModal({ product, onClose, onInquire }: ProductModalProps)
             product.name,
             product.model,
             size,
+            priceType,
+            selectedAmount,
           ),
         )
 
@@ -97,8 +118,51 @@ export function ProductModal({ product, onClose, onInquire }: ProductModalProps)
           <p className="modal-meta">
             {product.category} · {product.gender}
           </p>
-          <p className="modal-price">{formatPrice(product.price)}</p>
           <p className="modal-copy">Código {product.code || product.id}</p>
+
+          <div className="modal-block">
+            <p className="modal-label" id="price-type-label">
+              Elige el precio
+            </p>
+            <div
+              className="price-type-grid"
+              role="radiogroup"
+              aria-labelledby="price-type-label"
+            >
+              <button
+                type="button"
+                role="radio"
+                aria-checked={priceType === 'emprendedor'}
+                className={
+                  priceType === 'emprendedor'
+                    ? 'price-type-option is-active'
+                    : 'price-type-option'
+                }
+                onClick={() => setPriceType('emprendedor')}
+              >
+                <span className="price-type-name">Emprendedor</span>
+                <span className="price-type-amount">
+                  {formatPrice(product.price)}
+                </span>
+              </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={priceType === 'mayorista'}
+                className={
+                  priceType === 'mayorista'
+                    ? 'price-type-option is-active'
+                    : 'price-type-option'
+                }
+                onClick={() => setPriceType('mayorista')}
+              >
+                <span className="price-type-name">Precio mayorista</span>
+                <span className="price-type-amount">
+                  {formatPrice(product.wholesalePrice)}
+                </span>
+              </button>
+            </div>
+          </div>
 
           <div className="modal-block">
             <p className="modal-label">Colores</p>

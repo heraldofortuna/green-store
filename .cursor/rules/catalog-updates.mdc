@@ -12,6 +12,7 @@ Cuando el usuario entregue PDFs de comercio (Nike, Adidas, Reebok, RS21, etc.):
 1. **NO** abras, leas ni analices las fotos de zapatillas una por una.
 2. **NO** uses herramientas de visión sobre `public/images/products/**`.
 3. Ejecuta el import por script y reporta solo conteos (marca → N productos, con/sin imagen).
+4. **NO** “arregles” tallas, nombres o categorías a mano en `products.ts` / `catalog.json`. Todo va por `scripts/import-catalog.mjs` + `npm run import:catalog`.
 
 ## Comando
 
@@ -31,12 +32,53 @@ npm run import:catalog -- --brand Adidas --file "C:/ruta/linea.pdf" --file "C:/r
 
 ## Criterios de negocio (no repreguntar si ya están)
 
-- Precio mostrado: **Precio Emprendedor** (2.ª columna de 3).
+- **Retail** (1.ª columna del PDF): tal cual, sin markup; en el card va chiquito, plomo y tachado a la izquierda del precio.
+- Precio mostrado: **Precio Emprendedor** (2.ª columna de 3) **+ S/15**.
+- **Precio mayorista** = 3.ª columna del PDF **+ S/15**.
 - Adidas línea + liquidación = marca Adidas (sin etiqueta liquidación).
 - Imagen: foto grande del PDF (~600px), extraída por `pdfimages` en el script.
 - Géneros: Hombre, Mujer, Unisex, Niños.
 - Al actualizar una marca, **reemplazar solo esa marca**; el resto del catálogo se conserva.
 
-## Respuesta al usuario
+## Tallas (crítico — no repetir el bug del “50”)
 
-Sé breve: confirma marca(s) actualizadas, totales y si hace falta commit/push. No listes los 555 productos.
+Layout Fritz: en cada fila el **SKU** está en una columna y el bloque nombre/precio en la otra.
+
+- Las **tallas** van en la columna **opuesta al SKU**, misma fila (ej. `40/ 41/ 42.5`).
+- El número suelto **pegado al SKU** (muy a menudo `50`, también `45`, `47`…) es **stock/cantidad**, **NO** talla.
+- EU válido en estos catálogos: **20–48**. **Nunca** aceptar talla **50**.
+- Emparejar tallas con `pickSizesForSku` (lado opuesto al SKU). No usar el token junto al código.
+- El script corre `validateCatalog()` y **aborta** si detecta talla 50, rango inválido o demasiados productos con 1 sola talla.
+
+## Nombres (crítico)
+
+- El nombre sale del token de modelo del PDF (no del SKU, no de la talla, no del precio).
+- No inventar ni “embellecer” nombres. Si el pairing falla, se corrige el script, no el JSON a mano.
+- Validación: nombre no puede parecer talla/precio ni quedar vacío.
+
+## Categorías (crítico)
+
+Solo las que existen en los PDF (nunca inventar `Lifestyle` ni `Casual`):
+
+`Running` · `Urbanas` · `Chimpunes` · `Sportswear` · `Basketball` · `Training` · `Outdoor` · `Terrex` · `Sandalias` · `Tenis` · `Escolar` · `Skate`
+
+- PDF `URBANO` / `CASUAL` / `ORIGINALS` → **Urbanas**
+- PDF `SANDALIAS` → **Sandalias**; `TENIS` → **Tenis**
+- PDF `TERREX` → **Terrex** (categoría propia; no mezclar con Outdoor)
+- PDF `CHIMPUNES` / fútbol → **Chimpunes** (no Outdoor)
+- PDF `SPORTSWEAR` → **Sportswear**; `ESCOLAR` → **Escolar**
+- PDF `HIKING` / `OUTDOOR` / `PLATAFORMA` → **Outdoor**
+- PDF `SKATEBOARDING` → **Skate**
+- Si aparece una categoría nueva en el PDF, se añade en `mapCategory` + `ALLOWED_CATEGORIES` + `emitTs` y se reimporta. **Sin fusionar ni inventar.**
+
+## Tras cada import — reportar
+
+Sé breve. Incluye:
+
+- marcas y totales
+- con/sin imagen
+- rango de tallas EU (min→max) y que **no** haya 50
+- conteo por categoría
+- si hace falta commit/push
+
+No listes cientos de productos.

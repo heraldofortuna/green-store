@@ -1,4 +1,5 @@
 import { asset } from '../lib/assets'
+import { BrandStrip } from './BrandStrip'
 
 interface HeroProps {
   onExplore: () => void
@@ -32,6 +33,8 @@ export function Hero({ onExplore }: HeroProps) {
           </button>
         </div>
       </div>
+
+      <BrandStrip />
     </section>
   )
 }
