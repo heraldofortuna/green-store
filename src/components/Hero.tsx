@@ -32,9 +32,9 @@ export function Hero({ onExplore }: HeroProps) {
             Ver catálogo
           </button>
         </div>
-      </div>
 
-      <BrandStrip />
+        <BrandStrip />
+      </div>
     </section>
   )
 }
