@@ -235,7 +235,7 @@ export function Filters({ filters, onChange, resultCount }: FiltersProps) {
               <span>Buscar</span>
               <input
                 type="search"
-                placeholder="Marca, modelo o nombre…"
+                placeholder="Ingresa el modelo o código"
                 value={filters.search}
                 onChange={(e) =>
                   onChange({ ...filters, search: e.target.value })
@@ -342,7 +342,7 @@ export function Filters({ filters, onChange, resultCount }: FiltersProps) {
             <span>Buscar</span>
             <input
               type="search"
-              placeholder="Marca, modelo o nombre…"
+              placeholder="Ingresa el modelo o código"
               value={filters.search}
               onChange={(e) =>
                 onChange({ ...filters, search: e.target.value })

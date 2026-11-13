@@ -98,7 +98,9 @@ export function ProductModal({
             product.image ? 'modal-media' : 'modal-media is-placeholder'
           }
         >
+          <BrandMark brand={product.brand} className="modal-media-brand" />
           <img
+            className="modal-media-shot"
             src={
               product.image
                 ? productImage(product.image)
@@ -109,9 +111,6 @@ export function ProductModal({
         </div>
 
         <div className="modal-body">
-          <div className="product-brand">
-            <BrandMark brand={product.brand} className="product-brand-mark" />
-          </div>
           <h2 id="product-modal-title" className="modal-title">
             {product.name}
           </h2>

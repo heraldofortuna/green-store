@@ -11,6 +11,7 @@ import { pathToFileURL } from 'node:url'
 import { fileURLToPath } from 'node:url'
 
 const require = createRequire(import.meta.url)
+const { createCanvas, loadImage } = require('canvas')
 const pdfjsLib = await import(
   pathToFileURL(require.resolve('pdfjs-dist/legacy/build/pdf.mjs')).href
 )
@@ -115,8 +116,9 @@ function isSizeRangeToken(str) {
 function isSingleSizeToken(str) {
   if (!SINGLE_SIZE_RE.test(str.replace(/\s+/g, ' '))) return false
   const n = Number(str)
-  // EU realista en estos PDFs (niños ~20, adultos hasta ~48). "50" junto al SKU es stock.
-  return !Number.isNaN(n) && n >= 20 && n <= 48
+  // Sin mínimo/máximo de negocio: lo que diga el PDF.
+  // El "50" (u otro nº) pegado al SKU se filtra aparte como stock.
+  return !Number.isNaN(n) && n > 0
 }
 
 function isSizeToken(str) {
@@ -258,26 +260,21 @@ function validateCatalog(products) {
       continue
     }
     for (const s of p.sizes) {
-      if (typeof s !== 'number' || Number.isNaN(s) || s < 20 || s > 48) {
-        errors.push(`${p.code}: talla fuera de rango EU 20–48 (${s})`)
-      }
-      if (s === 50) {
-        errors.push(
-          `${p.code}: talla 50 inválida (en Fritz "50" junto al SKU es stock)`,
-        )
+      if (typeof s !== 'number' || Number.isNaN(s) || s <= 0) {
+        errors.push(`${p.code}: talla inválida (${s})`)
       }
       sizeCounts.set(s, (sizeCounts.get(s) || 0) + 1)
     }
     if (p.sizes.length === 1) singleSizeOnly += 1
   }
 
-  // Regresión típica: muchos productos con solo "50" (stock mal leído).
+  // Regresión de pairing: el stock "50" pegado al SKU se coló como talla.
   const only50 = products.filter(
     (p) => p.sizes.length === 1 && p.sizes[0] === 50,
   ).length
-  if (only50 > 0) {
+  if (only50 >= 20 || only50 / Math.max(products.length, 1) > 0.1) {
     errors.push(
-      `${only50} productos con única talla 50 (casi seguro stock, no talla)`,
+      `${only50} productos con única talla 50 (probable stock mal leído junto al SKU)`,
     )
   }
 
@@ -312,6 +309,177 @@ function slugify(value) {
 
 function isProductPhoto(width, height) {
   return width >= 420 && height >= 420 && width <= 1200 && height <= 1200
+}
+
+function colorDist(r1, g1, b1, r2, g2, b2) {
+  return Math.hypot(r1 - r2, g1 - g2, b1 - b2)
+}
+
+/** Color de fondo típico Fritz (teal/plomo) cuando la foto ya fue blanqueada. */
+const FRITZ_TEAL = { r: 76, g: 105, b: 113 }
+
+/**
+ * Fritz pinta las zapatillas sobre un fondo teal/plomo uniforme.
+ * Flood-fill + limpieza del halo anti-alias en el borde del calzado.
+ */
+async function whitenProductBackground(srcPath, destPath) {
+  const img = await loadImage(srcPath)
+  const canvas = createCanvas(img.width, img.height)
+  const ctx = canvas.getContext('2d')
+  ctx.drawImage(img, 0, 0)
+  const imageData = ctx.getImageData(0, 0, img.width, img.height)
+  const { data, width, height } = imageData
+
+  const corners = [
+    [1, 1],
+    [width - 2, 1],
+    [1, height - 2],
+    [width - 2, height - 2],
+  ]
+  let sr = 0
+  let sg = 0
+  let sb = 0
+  for (const [x, y] of corners) {
+    const i = (y * width + x) * 4
+    sr += data[i]
+    sg += data[i + 1]
+    sb += data[i + 2]
+  }
+  sr /= 4
+  sg /= 4
+  sb /= 4
+
+  const alreadyWhite = sr > 245 && sg > 245 && sb > 245
+  // Clave de cromakey: teal original del PDF, o el muestreado en esquinas.
+  const keyR = alreadyWhite ? FRITZ_TEAL.r : sr
+  const keyG = alreadyWhite ? FRITZ_TEAL.g : sg
+  const keyB = alreadyWhite ? FRITZ_TEAL.b : sb
+
+  const bg = new Uint8Array(width * height)
+
+  if (!alreadyWhite) {
+    const THRESH = 48
+    const queue = []
+    const tryEnqueue = (x, y) => {
+      if (x < 0 || y < 0 || x >= width || y >= height) return
+      const idx = y * width + x
+      if (bg[idx]) return
+      const i = idx * 4
+      if (colorDist(data[i], data[i + 1], data[i + 2], keyR, keyG, keyB) > THRESH) {
+        return
+      }
+      bg[idx] = 1
+      queue.push(idx)
+    }
+
+    for (let x = 0; x < width; x++) {
+      tryEnqueue(x, 0)
+      tryEnqueue(x, height - 1)
+    }
+    for (let y = 0; y < height; y++) {
+      tryEnqueue(0, y)
+      tryEnqueue(width - 1, y)
+    }
+
+    for (let qi = 0; qi < queue.length; qi++) {
+      const idx = queue[qi]
+      const x = idx % width
+      const y = (idx / width) | 0
+      tryEnqueue(x + 1, y)
+      tryEnqueue(x - 1, y)
+      tryEnqueue(x, y + 1)
+      tryEnqueue(x, y - 1)
+    }
+  } else {
+    for (let idx = 0; idx < width * height; idx++) {
+      const i = idx * 4
+      if (data[i] > 248 && data[i + 1] > 248 && data[i + 2] > 248) bg[idx] = 1
+    }
+  }
+
+  // Dilatar el fondo 1px para comer el anti-alias más crudo.
+  const dilated = new Uint8Array(bg)
+  for (let y = 1; y < height - 1; y++) {
+    for (let x = 1; x < width - 1; x++) {
+      const idx = y * width + x
+      if (bg[idx]) continue
+      if (
+        bg[idx - 1] ||
+        bg[idx + 1] ||
+        bg[idx - width] ||
+        bg[idx + width]
+      ) {
+        const i = idx * 4
+        const dKey = colorDist(data[i], data[i + 1], data[i + 2], keyR, keyG, keyB)
+        const cyan = (data[i + 1] + data[i + 2]) / 2 - data[i]
+        if (dKey < 70 || cyan > 10) dilated[idx] = 1
+      }
+    }
+  }
+
+  for (let idx = 0; idx < width * height; idx++) {
+    if (!dilated[idx]) continue
+    const i = idx * 4
+    data[i] = 255
+    data[i + 1] = 255
+    data[i + 2] = 255
+    bg[idx] = 1
+  }
+
+  // Despill del halo: píxeles del calzado junto al blanco con tinte teal/azul.
+  const nearBg = (x, y) => {
+    for (let dy = -2; dy <= 2; dy++) {
+      for (let dx = -2; dx <= 2; dx++) {
+        const xx = x + dx
+        const yy = y + dy
+        if (xx < 0 || yy < 0 || xx >= width || yy >= height) continue
+        if (bg[yy * width + xx]) return true
+      }
+    }
+    return false
+  }
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const idx = y * width + x
+      if (bg[idx]) continue
+      if (!nearBg(x, y)) continue
+      const i = idx * 4
+      let r = data[i]
+      let g = data[i + 1]
+      let b = data[i + 2]
+      const dKey = colorDist(r, g, b, keyR, keyG, keyB)
+      const cyan = (g + b) / 2 - r
+      if (cyan < 3 && dKey > 90) continue
+
+      // Mezcla residual hacia el teal → empujar a blanco.
+      const t = Math.min(
+        1,
+        Math.max(0, (100 - dKey) / 100) * 0.55 + Math.max(0, cyan) / 26,
+      )
+      if (t < 0.08) continue
+      const blend = Math.min(1, t * 1.35)
+      data[i] = Math.round(r + (255 - r) * blend)
+      data[i + 1] = Math.round(g + (255 - g) * blend)
+      data[i + 2] = Math.round(b + (255 - b) * blend)
+    }
+  }
+
+  ctx.putImageData(imageData, 0, 0)
+
+  const ext = path.extname(destPath).toLowerCase()
+  await new Promise((resolve, reject) => {
+    const out = fs.createWriteStream(destPath)
+    const stream =
+      ext === '.png'
+        ? canvas.createPNGStream()
+        : canvas.createJPEGStream({ quality: 0.94, chromaSubsampling: false })
+    stream.pipe(out)
+    out.on('finish', resolve)
+    out.on('error', reject)
+    stream.on('error', reject)
+  })
+  return true
 }
 
 function runPdfImagesList(pdfPath) {
@@ -441,10 +609,11 @@ function isNameToken(str) {
 }
 
 function parseSizes(raw) {
+  // Sin clamp de negocio: tallas tal cual en el PDF; allSizes sale de esto.
   return (raw || '')
     .split('/')
     .map((s) => Number(s.trim()))
-    .filter((n) => !Number.isNaN(n) && n >= 20 && n <= 48)
+    .filter((n) => !Number.isNaN(n) && n > 0)
 }
 
 function findPriceRows(items) {
@@ -793,7 +962,7 @@ async function importOne(entry, seq) {
     // Global seq avoids línea/liquidación overwriting the same adidas-pXX-YYY name.
     const fileName = `${brandKey}-${String(seq.n).padStart(4, '0')}${path.extname(src).toLowerCase()}`
     const dest = path.join(OUT_DIR, fileName)
-    fs.copyFileSync(src, dest)
+    await whitenProductBackground(src, dest)
     if (!photosByPage.has(meta.page)) photosByPage.set(meta.page, [])
     photosByPage.get(meta.page).push(`images/products/${fileName}`)
   }

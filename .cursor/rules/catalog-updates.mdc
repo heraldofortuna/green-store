@@ -37,6 +37,7 @@ npm run import:catalog -- --brand Adidas --file "C:/ruta/linea.pdf" --file "C:/r
 - **Precio mayorista** = 3.ª columna del PDF **+ S/15**.
 - Adidas línea + liquidación = marca Adidas (sin etiqueta liquidación).
 - Imagen: foto grande del PDF (~600px), extraída por `pdfimages` en el script.
+- Fondo de foto: el teal/plomo de Fritz se convierte a **blanco** en el import (`whitenProductBackground`); no hace falta tocar imágenes a mano.
 - Géneros: Hombre, Mujer, Unisex, Niños.
 - Al actualizar una marca, **reemplazar solo esa marca**; el resto del catálogo se conserva.
 
@@ -46,9 +47,9 @@ Layout Fritz: en cada fila el **SKU** está en una columna y el bloque nombre/pr
 
 - Las **tallas** van en la columna **opuesta al SKU**, misma fila (ej. `40/ 41/ 42.5`).
 - El número suelto **pegado al SKU** (muy a menudo `50`, también `45`, `47`…) es **stock/cantidad**, **NO** talla.
-- EU válido en estos catálogos: **20–48**. **Nunca** aceptar talla **50**.
-- Emparejar tallas con `pickSizesForSku` (lado opuesto al SKU). No usar el token junto al código.
-- El script corre `validateCatalog()` y **aborta** si detecta talla 50, rango inválido o demasiados productos con 1 sola talla.
+- **Sin mínimo ni máximo de talla.** Extraer del PDF tal cual; `allSizes` se genera dinámicamente del catálogo importado.
+- Emparejar tallas con `pickSizesForSku` (lado opuesto al SKU). No usar el token junto al código (ese número suele ser stock).
+- El script corre `validateCatalog()` y **aborta** si el pairing se rompe (p. ej. demasiados productos con 1 sola talla / stock mal leído).
 
 ## Nombres (crítico)
 

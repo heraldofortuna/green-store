@@ -545,9 +545,9 @@
 
 .product-media-brand {
   flex: 0 0 auto;
-  height: 1.65rem;
+  height: 3.3rem;
   width: auto;
-  max-width: 58%;
+  max-width: 72%;
   object-fit: contain;
   /* Logos en assets son blancos sobre negro → se leen negros sobre blanco */
   filter: invert(1);
@@ -558,7 +558,7 @@
   margin: 0;
   color: #111;
   filter: none;
-  font-size: 0.72rem;
+  font-size: 1.44rem;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -579,14 +579,14 @@
 }
 
 .product-card:hover .product-media:not(.is-placeholder) .product-media-shot {
-  transform: scale(1.04);
+  transform: scale(1.12);
 }
 
 .modal-media.is-placeholder {
   background: #ffffff;
 }
 
-.modal-media.is-placeholder img {
+.modal-media.is-placeholder .modal-media-shot {
   width: min(38%, 140px);
   max-height: 140px;
   opacity: 0.85;
@@ -768,18 +768,41 @@
 }
 
 .modal-media {
-  display: grid;
-  place-items: center;
-  min-height: 280px;
-  padding: 1.75rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.45rem;
+  min-height: 360px;
+  padding: 0.45rem 1.25rem 1.35rem;
   background: #ffffff;
 }
 
-.modal-media img {
+.modal-media-brand {
+  flex: 0 0 auto;
+  height: 6.6rem;
+  width: auto;
+  max-width: 70%;
+  object-fit: contain;
+  filter: invert(1);
+}
+
+.modal-media-brand.brand-mark-text {
+  height: auto;
+  color: #111;
+  filter: none;
+  font-size: 2.4rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.modal-media-shot {
+  flex: 1 1 auto;
   width: auto;
   height: auto;
-  max-width: min(68%, 280px);
-  max-height: 260px;
+  max-width: min(92%, 420px);
+  max-height: 340px;
   min-height: 0;
   object-fit: contain;
 }
@@ -789,7 +812,7 @@
 }
 
 .modal-title {
-  margin: 0.15rem 0 0;
+  margin: 0;
   font-size: 1.7rem;
   letter-spacing: -0.02em;
 }
@@ -990,13 +1013,17 @@
   }
 
   .modal-media {
-    min-height: 220px;
-    padding: 1.25rem 1rem;
+    min-height: 280px;
+    padding: 0.35rem 1rem 1.1rem;
   }
 
-  .modal-media img {
-    max-width: min(58%, 220px);
-    max-height: 200px;
+  .modal-media-shot {
+    max-width: min(88%, 320px);
+    max-height: 240px;
+  }
+
+  .modal-media-brand {
+    height: 5.2rem;
   }
 
   .price-type-grid {

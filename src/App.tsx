@@ -30,17 +30,18 @@ function App() {
       const matchesSearch =
         !query ||
         product.name.toLowerCase().includes(query) ||
-        product.brand.toLowerCase().includes(query) ||
         product.model.toLowerCase().includes(query) ||
-        product.category.toLowerCase().includes(query) ||
-        product.gender.toLowerCase().includes(query) ||
+        product.code.toLowerCase().includes(query) ||
         product.id.toLowerCase().includes(query)
 
       const matchesBrand = !filters.brand || product.brand === filters.brand
       const matchesCategory =
         !filters.category || product.category === filters.category
       const matchesGender =
-        !filters.gender || product.gender === filters.gender
+        !filters.gender ||
+        product.gender === filters.gender ||
+        ((filters.gender === 'Hombre' || filters.gender === 'Mujer') &&
+          product.gender === 'Unisex')
       const matchesSize =
         !filters.size || product.sizes.includes(filters.size)
 

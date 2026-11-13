@@ -23,9 +23,9 @@ export function Hero({ onExplore }: HeroProps) {
           alt="GREEN"
           className="hero-logo"
         />
-        <h1 className="hero-title">Zapatillas con presencia</h1>
+        <h1 className="hero-title">Viste diferente</h1>
         <p className="hero-copy">
-          Catálogo digital de marcas, modelos y tallas listos para la calle.
+          Las mejores marcas y tendencias al mejor precio.
         </p>
         <div className="hero-cta">
           <button type="button" className="btn btn-primary" onClick={onExplore}>
