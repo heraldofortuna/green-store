@@ -83,23 +83,23 @@ const POPPLER_BIN =
 const PDFS = [
   {
     brand: 'Nike',
-    file: 'C:/Users/heral/Downloads/1794268716487_CATALOGO_NIKE_9_NOVIEMBRE_2026.pdf',
+    file: 'C:/Users/heral/Downloads/1794837582225_CATALOGO_NIKE_16_NOVIEMBRE_2026.pdf',
   },
   {
     brand: 'Adidas',
-    file: 'C:/Users/heral/Downloads/1794268714033_CATALOGO_ADIDAS_LINEA_9_NOVIEMBRE_2026.pdf',
+    file: 'C:/Users/heral/Downloads/1794837580104_CATALOGO_ADIDAS_LINEA_16_NOVIEMBRE_2026.pdf',
   },
   {
     brand: 'Adidas',
-    file: 'C:/Users/heral/Downloads/1794268714484_CATALOGO_ADIDAS_LIQUIDACION_9_NOVIEMBRE_2026.pdf',
+    file: 'C:/Users/heral/Downloads/1794837580557_CATALOGO_ADIDAS_LIQUIDACION_16_NOVIEMBRE_2026.pdf',
   },
   {
     brand: 'Reebok',
-    file: 'C:/Users/heral/Downloads/1794268716008_CATALOGO_REEBOK_Y_CHAMPION_9_NOVIEMBRE_2026.pdf',
+    file: 'C:/Users/heral/Downloads/1794837581754_CATALOGO_REEBOK_Y_CHAMPION_16_NOVIEMBRE_2026.pdf',
   },
   {
     brand: 'RS21',
-    file: 'C:/Users/heral/Downloads/1794268715559_CATALOGO_RS_21_9_NOVIEMBRE_2026.pdf',
+    file: 'C:/Users/heral/Downloads/1794837581334_CATALOGO_RS_21_16_NOVIEMBRE_2026.pdf',
   },
 ]
 
@@ -315,12 +315,71 @@ function colorDist(r1, g1, b1, r2, g2, b2) {
   return Math.hypot(r1 - r2, g1 - g2, b1 - b2)
 }
 
-/** Color de fondo típico Fritz (teal/plomo) cuando la foto ya fue blanqueada. */
-const FRITZ_TEAL = { r: 76, g: 105, b: 113 }
+/**
+ * Fritz embebe soft-mask (smask) por cada foto 600×600.
+ * Componer RGB + máscara sobre blanco evita el chroma-key que
+ * se comía suelas claras / PRISMA / purple-white.
+ */
+async function compositeWithSoftMask(rgbPath, maskPath, destPath) {
+  const rgb = await loadImage(rgbPath)
+  const mask = await loadImage(maskPath)
+  const { width, height } = rgb
+  const canvas = createCanvas(width, height)
+  const ctx = canvas.getContext('2d')
+  ctx.drawImage(rgb, 0, 0)
+  const imageData = ctx.getImageData(0, 0, width, height)
+  const { data } = imageData
+
+  const maskCanvas = createCanvas(width, height)
+  const maskCtx = maskCanvas.getContext('2d')
+  maskCtx.drawImage(mask, 0, 0)
+  const md = maskCtx.getImageData(0, 0, width, height).data
+
+  // Teal Fritz típico para despill suave en el borde.
+  const kr = 76
+  const kg = 105
+  const kb = 113
+
+  for (let i = 0; i < data.length; i += 4) {
+    const a = md[i] / 255
+    if (a >= 0.98) continue
+    if (a <= 0.02) {
+      data[i] = 255
+      data[i + 1] = 255
+      data[i + 2] = 255
+      continue
+    }
+    // Despill: resta un poco del teal residual en el fringe.
+    let r = data[i]
+    let g = data[i + 1]
+    let b = data[i + 2]
+    const spill = (1 - a) * 0.65
+    r = r + (r - kr) * spill * 0.35
+    g = g + (g - kg) * spill * 0.35
+    b = b + (b - kb) * spill * 0.35
+    data[i] = Math.round(Math.min(255, Math.max(0, r * a + 255 * (1 - a))))
+    data[i + 1] = Math.round(Math.min(255, Math.max(0, g * a + 255 * (1 - a))))
+    data[i + 2] = Math.round(Math.min(255, Math.max(0, b * a + 255 * (1 - a))))
+  }
+
+  ctx.putImageData(imageData, 0, 0)
+  const ext = path.extname(destPath).toLowerCase()
+  await new Promise((resolve, reject) => {
+    const out = fs.createWriteStream(destPath)
+    const stream =
+      ext === '.png'
+        ? canvas.createPNGStream()
+        : canvas.createJPEGStream({ quality: 0.94, chromaSubsampling: false })
+    stream.pipe(out)
+    out.on('finish', resolve)
+    out.on('error', reject)
+    stream.on('error', reject)
+  })
+  return true
+}
 
 /**
- * Fritz pinta las zapatillas sobre un fondo teal/plomo uniforme.
- * Flood-fill + limpieza del halo anti-alias en el borde del calzado.
+ * Fallback si no hay smask: chroma-key teal estricto conectado al borde.
  */
 async function whitenProductBackground(srcPath, destPath) {
   const img = await loadImage(srcPath)
@@ -349,120 +408,110 @@ async function whitenProductBackground(srcPath, destPath) {
   sg /= 4
   sb /= 4
 
-  const alreadyWhite = sr > 245 && sg > 245 && sb > 245
-  // Clave de cromakey: teal original del PDF, o el muestreado en esquinas.
-  const keyR = alreadyWhite ? FRITZ_TEAL.r : sr
-  const keyG = alreadyWhite ? FRITZ_TEAL.g : sg
-  const keyB = alreadyWhite ? FRITZ_TEAL.b : sb
-
-  const bg = new Uint8Array(width * height)
-
-  if (!alreadyWhite) {
-    const THRESH = 48
-    const queue = []
-    const tryEnqueue = (x, y) => {
-      if (x < 0 || y < 0 || x >= width || y >= height) return
-      const idx = y * width + x
-      if (bg[idx]) return
-      const i = idx * 4
-      if (colorDist(data[i], data[i + 1], data[i + 2], keyR, keyG, keyB) > THRESH) {
-        return
-      }
-      bg[idx] = 1
-      queue.push(idx)
+  // Ya blanco → no tocar.
+  if (sr > 240 && sg > 240 && sb > 240) {
+    if (path.resolve(srcPath) !== path.resolve(destPath)) {
+      fs.copyFileSync(srcPath, destPath)
     }
-
-    for (let x = 0; x < width; x++) {
-      tryEnqueue(x, 0)
-      tryEnqueue(x, height - 1)
-    }
-    for (let y = 0; y < height; y++) {
-      tryEnqueue(0, y)
-      tryEnqueue(width - 1, y)
-    }
-
-    for (let qi = 0; qi < queue.length; qi++) {
-      const idx = queue[qi]
-      const x = idx % width
-      const y = (idx / width) | 0
-      tryEnqueue(x + 1, y)
-      tryEnqueue(x - 1, y)
-      tryEnqueue(x, y + 1)
-      tryEnqueue(x, y - 1)
-    }
-  } else {
-    for (let idx = 0; idx < width * height; idx++) {
-      const i = idx * 4
-      if (data[i] > 248 && data[i + 1] > 248 && data[i + 2] > 248) bg[idx] = 1
-    }
+    return false
   }
 
-  // Dilatar el fondo 1px para comer el anti-alias más crudo.
-  const dilated = new Uint8Array(bg)
+  const keyLum = (sr + sg + sb) / 3
+  const isFritzTeal =
+    colorDist(sr, sg, sb, 76, 105, 113) < 45 ||
+    (sg > sr + 8 && sb > sr + 8 && Math.abs(sg - sb) < 28 && keyLum > 55 && keyLum < 165)
+
+  if (!isFritzTeal) {
+    if (path.resolve(srcPath) !== path.resolve(destPath)) {
+      fs.copyFileSync(srcPath, destPath)
+    }
+    return false
+  }
+
+  /** 0 = zapato, 255 = fondo teal puro (para soft-blend). */
+  const scoreAt = (r, g, b) => {
+    const lum = (r + g + b) / 3
+    // Blancos / claros del calzado: nunca fondo.
+    if (lum > 185) return 0
+    // Navy / negro / azul saturado del zapato: no teal.
+    if (lum < 45) return 0
+    // Firma teal Fritz: G y B claramente por encima de R, G≈B.
+    const tealLift = Math.min(g - r, b - r)
+    if (tealLift < 6) return 0
+    if (Math.abs(g - b) > 30) return 0
+    const d = colorDist(r, g, b, sr, sg, sb)
+    if (d > 48) return 0
+    if (Math.abs(lum - keyLum) > 36) return 0
+    // Soft score: más cerca del sample → más fondo.
+    const closeness = Math.max(0, 1 - d / 48)
+    const liftScore = Math.min(1, tealLift / 18)
+    return Math.round(255 * closeness * liftScore)
+  }
+
+  const bg = new Uint8Array(width * height)
+  const queue = []
+
+  const tryEnqueue = (x, y) => {
+    if (x < 0 || y < 0 || x >= width || y >= height) return
+    const idx = y * width + x
+    if (bg[idx]) return
+    const i = idx * 4
+    const s = scoreAt(data[i], data[i + 1], data[i + 2])
+    // Solo seed/flood con teal bastante claro (evita filtrarse al zapato).
+    if (s < 90) return
+    bg[idx] = s
+    queue.push(idx)
+  }
+
+  for (let x = 0; x < width; x++) {
+    tryEnqueue(x, 0)
+    tryEnqueue(x, height - 1)
+  }
+  for (let y = 0; y < height; y++) {
+    tryEnqueue(0, y)
+    tryEnqueue(width - 1, y)
+  }
+
+  for (let qi = 0; qi < queue.length; qi++) {
+    const idx = queue[qi]
+    const x = idx % width
+    const y = (idx / width) | 0
+    tryEnqueue(x + 1, y)
+    tryEnqueue(x - 1, y)
+    tryEnqueue(x, y + 1)
+    tryEnqueue(x, y - 1)
+  }
+
+  // Anti-alias suave: vecinos del borde con un poco de teal residual.
   for (let y = 1; y < height - 1; y++) {
     for (let x = 1; x < width - 1; x++) {
       const idx = y * width + x
       if (bg[idx]) continue
       if (
-        bg[idx - 1] ||
-        bg[idx + 1] ||
-        bg[idx - width] ||
-        bg[idx + width]
+        !(
+          bg[idx - 1] ||
+          bg[idx + 1] ||
+          bg[idx - width] ||
+          bg[idx + width]
+        )
       ) {
-        const i = idx * 4
-        const dKey = colorDist(data[i], data[i + 1], data[i + 2], keyR, keyG, keyB)
-        const cyan = (data[i + 1] + data[i + 2]) / 2 - data[i]
-        if (dKey < 70 || cyan > 10) dilated[idx] = 1
+        continue
       }
+      const i = idx * 4
+      const s = scoreAt(data[i], data[i + 1], data[i + 2])
+      if (s < 40) continue
+      bg[idx] = s
     }
   }
 
   for (let idx = 0; idx < width * height; idx++) {
-    if (!dilated[idx]) continue
+    const s = bg[idx]
+    if (!s) continue
     const i = idx * 4
-    data[i] = 255
-    data[i + 1] = 255
-    data[i + 2] = 255
-    bg[idx] = 1
-  }
-
-  // Despill del halo: píxeles del calzado junto al blanco con tinte teal/azul.
-  const nearBg = (x, y) => {
-    for (let dy = -2; dy <= 2; dy++) {
-      for (let dx = -2; dx <= 2; dx++) {
-        const xx = x + dx
-        const yy = y + dy
-        if (xx < 0 || yy < 0 || xx >= width || yy >= height) continue
-        if (bg[yy * width + xx]) return true
-      }
-    }
-    return false
-  }
-
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      const idx = y * width + x
-      if (bg[idx]) continue
-      if (!nearBg(x, y)) continue
-      const i = idx * 4
-      let r = data[i]
-      let g = data[i + 1]
-      let b = data[i + 2]
-      const dKey = colorDist(r, g, b, keyR, keyG, keyB)
-      const cyan = (g + b) / 2 - r
-      if (cyan < 3 && dKey > 90) continue
-
-      // Mezcla residual hacia el teal → empujar a blanco.
-      const t = Math.min(
-        1,
-        Math.max(0, (100 - dKey) / 100) * 0.55 + Math.max(0, cyan) / 26,
-      )
-      if (t < 0.08) continue
-      const blend = Math.min(1, t * 1.35)
-      data[i] = Math.round(r + (255 - r) * blend)
-      data[i + 1] = Math.round(g + (255 - g) * blend)
-      data[i + 2] = Math.round(b + (255 - b) * blend)
-    }
+    const t = s / 255
+    data[i] = Math.round(data[i] * (1 - t) + 255 * t)
+    data[i + 1] = Math.round(data[i + 1] * (1 - t) + 255 * t)
+    data[i + 2] = Math.round(data[i + 2] * (1 - t) + 255 * t)
   }
 
   ctx.putImageData(imageData, 0, 0)
@@ -960,9 +1009,23 @@ async function importOne(entry, seq) {
     photoCount++
     seq.n += 1
     // Global seq avoids línea/liquidación overwriting the same adidas-pXX-YYY name.
-    const fileName = `${brandKey}-${String(seq.n).padStart(4, '0')}${path.extname(src).toLowerCase()}`
+    // Salida siempre .jpg (composiciones sobre blanco).
+    const fileName = `${brandKey}-${String(seq.n).padStart(4, '0')}.jpg`
     const dest = path.join(OUT_DIR, fileName)
-    await whitenProductBackground(src, dest)
+
+    const next = i + 1 < n ? list[i + 1] : null
+    const hasSoftMask =
+      next &&
+      next.type === 'smask' &&
+      next.width === meta.width &&
+      next.height === meta.height
+
+    if (hasSoftMask) {
+      const maskPath = path.join(workDir, extracted[i + 1])
+      await compositeWithSoftMask(src, maskPath, dest)
+    } else {
+      await whitenProductBackground(src, dest)
+    }
     if (!photosByPage.has(meta.page)) photosByPage.set(meta.page, [])
     photosByPage.get(meta.page).push(`images/products/${fileName}`)
   }
@@ -1065,8 +1128,13 @@ async function main() {
       .filter(([, n]) => n > 0),
   )
 
-  fs.writeFileSync(JSON_OUT, JSON.stringify(clean, null, 2))
-  fs.writeFileSync(DATA_OUT, emitTs(clean))
+  const writeAtomic = (file, contents) => {
+    const tmp = `${file}.${process.pid}.tmp`
+    fs.writeFileSync(tmp, contents)
+    fs.renameSync(tmp, file)
+  }
+  writeAtomic(JSON_OUT, JSON.stringify(clean, null, 2))
+  writeAtomic(DATA_OUT, emitTs(clean))
   console.log(`\n✓ ${clean.length} products → ${DATA_OUT}`)
   console.log(`✓ mirror JSON → ${JSON_OUT}`)
   console.log(

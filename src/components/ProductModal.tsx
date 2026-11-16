@@ -115,9 +115,9 @@ export function ProductModal({
             {product.name}
           </h2>
           <p className="modal-meta">
-            {product.category} · {product.gender}
+            {product.category} · {product.gender} ·{' '}
+            {product.code || product.id}
           </p>
-          <p className="modal-copy">Código {product.code || product.id}</p>
 
           <div className="modal-block">
             <p className="modal-label" id="price-type-label">
@@ -164,17 +164,6 @@ export function ProductModal({
           </div>
 
           <div className="modal-block">
-            <p className="modal-label">Colores</p>
-            <div className="chip-row">
-              {product.colors.map((color) => (
-                <span key={color} className="chip">
-                  {color}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <div className="modal-block">
             <p className="modal-label">Elige tu talla (EU)</p>
             <div className="size-grid">
               {product.sizes.map((value) => (
@@ -192,24 +181,30 @@ export function ProductModal({
             </div>
           </div>
 
-          {size === null ? (
-            <button type="button" className="btn btn-primary btn-block" disabled>
-              Selecciona una talla
-            </button>
-          ) : (
-            <a
-              className="btn btn-primary btn-block"
-              href={consultUrl}
-              target="_blank"
-              rel="noreferrer"
-              onClick={() => {
-                onInquire(product, size)
-                onClose()
-              }}
-            >
-              Consultar talla {size}
-            </a>
-          )}
+          <div className="modal-cta">
+            {size === null ? (
+              <button
+                type="button"
+                className="btn btn-primary btn-block"
+                disabled
+              >
+                Selecciona una talla
+              </button>
+            ) : (
+              <a
+                className="btn btn-primary btn-block"
+                href={consultUrl}
+                target="_blank"
+                rel="noreferrer"
+                onClick={() => {
+                  onInquire(product, size)
+                  onClose()
+                }}
+              >
+                Consultar talla {size}
+              </a>
+            )}
+          </div>
         </div>
       </div>
     </div>

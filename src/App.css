@@ -334,7 +334,7 @@
 
 .filters-grid {
   display: grid;
-  grid-template-columns: 1.5fr repeat(4, minmax(0, 1fr));
+  grid-template-columns: 1.5fr repeat(3, minmax(0, 1fr));
   gap: 0.85rem;
   margin-bottom: 1.8rem;
 }
@@ -745,9 +745,10 @@
   position: relative;
   display: grid;
   grid-template-columns: 1.05fr 1fr;
+  grid-template-rows: minmax(0, 1fr);
   width: min(920px, 100%);
   max-height: min(90vh, 760px);
-  overflow: auto;
+  overflow: hidden;
   border-radius: 24px;
   border: 1px solid var(--border);
   background: #0d0d0d;
@@ -812,6 +813,11 @@
 }
 
 .modal-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  overflow: auto;
   padding: 1.6rem 1.5rem 1.5rem;
 }
 
@@ -933,8 +939,10 @@
   color: #dff59a;
 }
 
-.modal-body .btn-block {
-  margin-top: 1.4rem;
+.modal-cta {
+  margin-top: auto;
+  padding-top: 1.4rem;
+  flex: 0 0 auto;
 }
 
 .toast {
@@ -1013,25 +1021,46 @@
 
 @media (max-width: 860px) {
   .modal-panel {
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
+    height: min(92vh, 760px);
+    max-height: min(92vh, 760px);
   }
 
   .modal-media {
-    min-height: 280px;
-    padding: 0.35rem 1rem 1.1rem;
+    flex: 0 0 auto;
+    min-height: 0;
+    max-height: 42%;
+    padding: 0.35rem 1rem 0.85rem;
   }
 
   .modal-media-shot {
-    max-width: min(88%, 320px);
-    max-height: 240px;
+    max-width: min(88%, 280px);
+    max-height: 180px;
   }
 
   .modal-media-brand {
-    height: 5.2rem;
+    height: 4.2rem;
+  }
+
+  .modal-body {
+    flex: 1 1 auto;
   }
 
   .price-type-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .price-type-option {
+    padding: 0.7rem 0.65rem;
+  }
+
+  .price-type-name {
+    font-size: 0.66rem;
+  }
+
+  .price-type-amount {
+    font-size: 1rem;
   }
 }
 

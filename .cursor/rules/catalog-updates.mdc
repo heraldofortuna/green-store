@@ -37,7 +37,7 @@ npm run import:catalog -- --brand Adidas --file "C:/ruta/linea.pdf" --file "C:/r
 - **Precio mayorista** = 3.ª columna del PDF **+ S/15**.
 - Adidas línea + liquidación = marca Adidas (sin etiqueta liquidación).
 - Imagen: foto grande del PDF (~600px), extraída por `pdfimages` en el script.
-- Fondo de foto: el teal/plomo de Fritz se convierte a **blanco** en el import (`whitenProductBackground`); no hace falta tocar imágenes a mano.
+- Fondo de foto: cada JPEG 600×600 suele traer **smask** en el PDF → componer RGB+máscara sobre blanco (`compositeWithSoftMask`). Fallback chroma-key solo si no hay smask. **Nunca** flood-fill agresivo: se come suelas blancas, PRISMA, purple/white, etc.
 - Géneros: Hombre, Mujer, Unisex, Niños.
 - Al actualizar una marca, **reemplazar solo esa marca**; el resto del catálogo se conserva.
 
