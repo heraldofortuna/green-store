@@ -14,6 +14,7 @@ const initialFilters: FilterState = {
   brand: '',
   category: '',
   gender: '',
+  size: '',
 }
 
 function App() {
@@ -41,12 +42,15 @@ function App() {
         product.gender === filters.gender ||
         ((filters.gender === 'Hombre' || filters.gender === 'Mujer') &&
           product.gender === 'Unisex')
+      const matchesSize =
+        !filters.size || product.sizes.includes(filters.size)
 
       return (
         matchesSearch &&
         matchesBrand &&
         matchesCategory &&
-        matchesGender
+        matchesGender &&
+        matchesSize
       )
     })
 

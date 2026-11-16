@@ -3,6 +3,7 @@ import {
   brands,
   categories,
   genders,
+  allSizes,
   type Category,
   type Gender,
 } from '../data/products'
@@ -12,9 +13,13 @@ export interface FilterState {
   brand: string
   category: Category | ''
   gender: Gender | ''
+  size: number | ''
 }
 
-type AdvancedFilters = Pick<FilterState, 'brand' | 'category' | 'gender'>
+type AdvancedFilters = Pick<
+  FilterState,
+  'brand' | 'category' | 'gender' | 'size'
+>
 
 interface FiltersProps {
   filters: FilterState
@@ -29,11 +34,14 @@ function advancedFrom(filters: FilterState): AdvancedFilters {
     brand: filters.brand,
     category: filters.category,
     gender: filters.gender,
+    size: filters.size,
   }
 }
 
 function advancedCountOf(values: AdvancedFilters) {
-  return [values.brand, values.category, values.gender].filter(Boolean).length
+  return [values.brand, values.category, values.gender, values.size].filter(
+    Boolean,
+  ).length
 }
 
 function useCompactFilters() {
@@ -117,6 +125,26 @@ function AdvancedFields({
           ))}
         </select>
       </label>
+
+      <label className="field">
+        <span>Talla</span>
+        <select
+          value={values.size}
+          onChange={(e) =>
+            onChange({
+              ...values,
+              size: e.target.value ? Number(e.target.value) : '',
+            })
+          }
+        >
+          <option value="">Todas</option>
+          {allSizes.map((size) => (
+            <option key={size} value={size}>
+              EU {size}
+            </option>
+          ))}
+        </select>
+      </label>
     </>
   )
 }
@@ -140,6 +168,7 @@ export function Filters({ filters, onChange, resultCount }: FiltersProps) {
       brand: '',
       category: '',
       gender: '',
+      size: '',
     })
   }
 
@@ -286,6 +315,7 @@ export function Filters({ filters, onChange, resultCount }: FiltersProps) {
                           brand: '',
                           category: '',
                           gender: '',
+                          size: '',
                         })
                       }
                     >

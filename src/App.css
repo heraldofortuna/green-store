@@ -334,8 +334,8 @@
 
 .filters-grid {
   display: grid;
-  grid-template-columns: 1.5fr repeat(3, minmax(0, 1fr));
-  gap: 0.85rem;
+  grid-template-columns: 1.35fr repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
   margin-bottom: 1.8rem;
 }
 
