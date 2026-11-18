@@ -1,6 +1,6 @@
 const MESSAGES = [
-  '🎄 Promociones de Navidad · Descuentos especiales en todo el catálogo',
-  '✨ Llegaron los nuevos modelos de RS21 · Descúbrelos en el catálogo',
+  'Promociones de Navidad · Descuentos especiales en todo el catálogo',
+  'Llegaron los nuevos modelos de RS21 · Descúbrelos en el catálogo',
 ]
 
 export function PromoBanner() {
