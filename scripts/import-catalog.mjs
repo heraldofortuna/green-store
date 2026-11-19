@@ -177,15 +177,30 @@ const ALLOWED_CATEGORIES = new Set([
   'Running',
   'Basketball',
   'Training',
-  'Outdoor',
+  'Todoterreno',
   'Skate',
   'Urbanas',
   'Chimpunes',
+  'Chocolateras',
   'Sandalias',
   'Tenis',
   'Sportswear',
   'Escolar',
-  'Terrex',
+])
+
+/**
+ * SKUs de fútbol sin sufijo FG/TF/IN legible en el nombre del PDF.
+ * Clasificados por tipo de suela (toperol grande vs coquito/plana).
+ */
+const FOOTBALL_SOLE_BY_CODE = new Map([
+  ['KJ3414', 'Chimpunes'], // F50 Hyperfast — toperoles grandes
+  ['IB4482-146', 'Chocolateras'], // Tiempo Maestro — coquito/turf
+  ['IB4486-100', 'Chocolateras'], // Tiempo Maestro — suela plana
+  ['FQ8446-001', 'Chocolateras'], // Vapor 16 Club — coquito
+  ['FQ8446-600', 'Chocolateras'], // Vapor 16 Club — coquito
+  ['FQ8449-301', 'Chocolateras'], // Zoom Vapor 16 — coquito
+  ['FQ8434-301', 'Chocolateras'], // Mercurial Vapor 16 Academy — plana
+  ['HQ7017-010', 'Chocolateras'], // Tiempo Streetg — plana
 ])
 
 function mapCategory(raw) {
@@ -199,7 +214,8 @@ function mapCategory(raw) {
   // Sin fallback inventado: una entrada del PDF → una categoría.
   if (c.includes('SANDALIA')) return 'Sandalias'
   if (c.includes('TENIS')) return 'Tenis'
-  if (c.includes('TERREX')) return 'Terrex'
+  // Terrex + Outdoor/Hiking/Plataforma → Todoterreno
+  if (c.includes('TERREX')) return 'Todoterreno'
   if (
     c.includes('FUTBOL') ||
     c.includes('CHIMPUN') ||
@@ -216,7 +232,7 @@ function mapCategory(raw) {
     c.includes('PLATAFORMA') ||
     c.includes('HIKING')
   ) {
-    return 'Outdoor'
+    return 'Todoterreno'
   }
   if (c.includes('SKATE')) return 'Skate'
   if (c.includes('SPORTSWEAR')) return 'Sportswear'
@@ -229,6 +245,54 @@ function mapCategory(raw) {
     return 'Urbanas'
   }
   return null
+}
+
+/** Toperoles grandes (césped) vs coquito/plana (chocolatera). */
+function footballSurfaceFromName(name) {
+  const t = String(name || '')
+    .toUpperCase()
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+  if (/\bFG\b|FG\/|\/MG\b|\bMG\b|\bAG\b|\bSG\b/.test(t)) return 'Chimpunes'
+  // No usar "STREET" suelto: matcheaba STREETTALK (Urbanas).
+  if (/\bTF\b|TURF|SALA|\bIN\b|STREETG|\bIC\b/.test(t)) return 'Chocolateras'
+  return null
+}
+
+function looksLikeFootballName(name) {
+  const t = String(name || '')
+    .toUpperCase()
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+  return /CHIMPUN|FUTBOL|FOOTBALL|SOCCER|PREDATOR|GOLETTO|COPA PURE|F50|MESSI|MERCURIAL|PHANTOM|TIEMPO|VAPOR|SUPER SALA|DEPORTIVO III/.test(
+    t,
+  )
+}
+
+/**
+ * Ajusta categoría final: Todoterreno ya viene de mapCategory;
+ * fútbol se parte en Chimpunes (toperol grande) vs Chocolateras.
+ */
+function finalizeCategory(pdfCategory, name, code) {
+  const surface =
+    FOOTBALL_SOLE_BY_CODE.get(String(code || '').toUpperCase()) ||
+    footballSurfaceFromName(name)
+
+  if (surface) return surface
+
+  if (
+    pdfCategory === 'Chimpunes' ||
+    (pdfCategory === 'Todoterreno' && looksLikeFootballName(name))
+  ) {
+    // Sin marcador de suela: dejar Chimpunes solo si el PDF dijo fútbol;
+    // modelos mal etiquetados como Terrex/Outdoor con nombre de fútbol
+    // sin FG/TF quedan fuera de Todoterreno.
+    if (pdfCategory === 'Todoterreno' && looksLikeFootballName(name)) {
+      return 'Chimpunes'
+    }
+  }
+
+  return pdfCategory
 }
 
 /**
@@ -702,10 +766,11 @@ function buildProduct({ skuItem, catItem, nameItem, priceRow, sizesItem, default
 
   const name = cleanProductName(nameItem.str)
   if (!name) return null
-  const category = mapCategory(catItem.str)
-  if (!category) return null
+  const mapped = mapCategory(catItem.str)
+  if (!mapped) return null
   const brand = resolveBrand(defaultBrand, name)
   const code = skuItem.str.toUpperCase()
+  const category = finalizeCategory(mapped, name, code)
 
   return {
     id: slugify(`${brand}-${code}`),
@@ -880,15 +945,15 @@ function emitTs(products) {
   | 'Running'
   | 'Basketball'
   | 'Training'
-  | 'Outdoor'
+  | 'Todoterreno'
   | 'Skate'
   | 'Urbanas'
   | 'Chimpunes'
+  | 'Chocolateras'
   | 'Sandalias'
   | 'Tenis'
   | 'Sportswear'
   | 'Escolar'
-  | 'Terrex'
 
 export type Gender = 'Hombre' | 'Mujer' | 'Unisex' | 'Niños'
 
@@ -916,11 +981,11 @@ export const categories: Category[] = [
   'Running',
   'Urbanas',
   'Chimpunes',
+  'Chocolateras',
   'Sportswear',
   'Basketball',
   'Training',
-  'Outdoor',
-  'Terrex',
+  'Todoterreno',
   'Sandalias',
   'Tenis',
   'Escolar',

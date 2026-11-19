@@ -574,6 +574,8 @@
   width: 100%;
   min-height: 0;
   object-fit: contain;
+  transform: scale(1.25);
+  transform-origin: center center;
   transition: transform 420ms ease;
 }
 
@@ -581,10 +583,11 @@
   width: 42%;
   max-width: 7.5rem;
   opacity: 0.9;
+  transform: none;
 }
 
 .product-card:hover .product-media:not(.is-placeholder) .product-media-shot {
-  transform: scale(1.12);
+  transform: scale(1.4);
 }
 
 .modal-media.is-placeholder {
@@ -807,8 +810,8 @@
   flex: 1 1 auto;
   width: auto;
   height: auto;
-  max-width: min(92%, 420px);
-  max-height: 340px;
+  max-width: min(92%, 525px);
+  max-height: 425px;
   min-height: 0;
   object-fit: contain;
 }
@@ -1036,8 +1039,8 @@
   }
 
   .modal-media-shot {
-    max-width: min(88%, 280px);
-    max-height: 180px;
+    max-width: min(88%, 350px);
+    max-height: 225px;
   }
 
   .modal-media-brand {
@@ -1102,12 +1105,12 @@
   .product-media-shot {
     width: 116%;
     max-width: none;
-    transform: scale(1.22);
+    transform: scale(1.525);
     transform-origin: center bottom;
   }
 
   .product-card:hover .product-media:not(.is-placeholder) .product-media-shot {
-    transform: scale(1.28);
+    transform: scale(1.6);
   }
 }
 

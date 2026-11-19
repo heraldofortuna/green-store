@@ -59,18 +59,17 @@ Layout Fritz: en cada fila el **SKU** está en una columna y el bloque nombre/pr
 
 ## Categorías (crítico)
 
-Solo las que existen en los PDF (nunca inventar `Lifestyle` ni `Casual`):
+Categorías del catálogo (nunca inventar `Lifestyle` ni `Casual`):
 
-`Running` · `Urbanas` · `Chimpunes` · `Sportswear` · `Basketball` · `Training` · `Outdoor` · `Terrex` · `Sandalias` · `Tenis` · `Escolar` · `Skate`
+`Running` · `Urbanas` · `Chimpunes` · `Chocolateras` · `Sportswear` · `Basketball` · `Training` · `Todoterreno` · `Sandalias` · `Tenis` · `Escolar` · `Skate`
 
 - PDF `URBANO` / `CASUAL` / `ORIGINALS` → **Urbanas**
 - PDF `SANDALIAS` → **Sandalias**; `TENIS` → **Tenis**
-- PDF `TERREX` → **Terrex** (categoría propia; no mezclar con Outdoor)
-- PDF `CHIMPUNES` / fútbol → **Chimpunes** (no Outdoor)
+- PDF `TERREX` / `HIKING` / `OUTDOOR` / `PLATAFORMA` → **Todoterreno**
+- PDF `CHIMPUNES` / fútbol → partir por suela: **FG/MG/AG/SG** (toperol grande) → **Chimpunes**; **TF/TURF/IN/SALA/plana/coquito** → **Chocolateras**
 - PDF `SPORTSWEAR` → **Sportswear**; `ESCOLAR` → **Escolar**
-- PDF `HIKING` / `OUTDOOR` / `PLATAFORMA` → **Outdoor**
 - PDF `SKATEBOARDING` → **Skate**
-- Si aparece una categoría nueva en el PDF, se añade en `mapCategory` + `ALLOWED_CATEGORIES` + `emitTs` y se reimporta. **Sin fusionar ni inventar.**
+- Si aparece una categoría nueva, se añade en `mapCategory` + `ALLOWED_CATEGORIES` + `emitTs` (+ `finalizeCategory` si aplica) y se reimporta.
 
 ## Tras cada import — reportar
 
