@@ -57,23 +57,28 @@ function stripInternalFields(products) {
       sizes,
       colors,
       image,
+      gallery,
       description,
-    }) => ({
-      id,
-      code,
-      name,
-      brand,
-      model,
-      category,
-      gender,
-      retailPrice,
-      price,
-      wholesalePrice,
-      sizes,
-      colors,
-      image,
-      description,
-    }),
+    }) => {
+      const row = {
+        id,
+        code,
+        name,
+        brand,
+        model,
+        category,
+        gender,
+        retailPrice,
+        price,
+        wholesalePrice,
+        sizes,
+        colors,
+        image,
+        description,
+      }
+      if (Array.isArray(gallery) && gallery.length) row.gallery = gallery
+      return row
+    },
   )
 }
 
@@ -83,23 +88,23 @@ const POPPLER_BIN =
 const PDFS = [
   {
     brand: 'Nike',
-    file: 'C:/Users/heral/Downloads/1794837582225_CATALOGO_NIKE_16_NOVIEMBRE_2026.pdf',
+    file: 'C:/Users/heral/Downloads/1795192216720_CATALOGO_NIKE_20_NOVIEMBRE_2026.pdf',
   },
   {
     brand: 'Adidas',
-    file: 'C:/Users/heral/Downloads/1794837580104_CATALOGO_ADIDAS_LINEA_16_NOVIEMBRE_2026.pdf',
+    file: 'C:/Users/heral/Downloads/1795192214265_CATALOGO_ADIDAS_LINEA_20_NOVIEMBRE_2026.pdf',
   },
   {
     brand: 'Adidas',
-    file: 'C:/Users/heral/Downloads/1794837580557_CATALOGO_ADIDAS_LIQUIDACION_16_NOVIEMBRE_2026.pdf',
+    file: 'C:/Users/heral/Downloads/1795192214772_CATALOGO_ADIDAS_LIQUIDACION_20_NOVIEMBRE_2026.pdf',
   },
   {
     brand: 'Reebok',
-    file: 'C:/Users/heral/Downloads/1794837581754_CATALOGO_REEBOK_Y_CHAMPION_16_NOVIEMBRE_2026.pdf',
+    file: 'C:/Users/heral/Downloads/1795192216156_CATALOGO_REEBOK_Y_CHAMPION_20_NOVIEMBRE_2026.pdf',
   },
   {
     brand: 'RS21',
-    file: 'C:/Users/heral/Downloads/1794837581334_CATALOGO_RS_21_16_NOVIEMBRE_2026.pdf',
+    file: 'C:/Users/heral/Downloads/1795192215605_CATALOGO_RS_21_20_NOVIEMBRE_2026.pdf',
   },
 ]
 
@@ -193,7 +198,6 @@ const ALLOWED_CATEGORIES = new Set([
  * Clasificados por tipo de suela (toperol grande vs coquito/plana).
  */
 const FOOTBALL_SOLE_BY_CODE = new Map([
-  ['KJ3414', 'Chimpunes'], // F50 Hyperfast — toperoles grandes
   ['IB4482-146', 'Chocolateras'], // Tiempo Maestro — coquito/turf
   ['IB4486-100', 'Chocolateras'], // Tiempo Maestro — suela plana
   ['FQ8446-001', 'Chocolateras'], // Vapor 16 Club — coquito
@@ -201,6 +205,10 @@ const FOOTBALL_SOLE_BY_CODE = new Map([
   ['FQ8449-301', 'Chocolateras'], // Zoom Vapor 16 — coquito
   ['FQ8434-301', 'Chocolateras'], // Mercurial Vapor 16 Academy — plana
   ['HQ7017-010', 'Chocolateras'], // Tiempo Streetg — plana
+  ['IB4482-001', 'Chocolateras'], // Tiempo Maestro
+  ['FQ8333-500', 'Chocolateras'], // Mercurial Superfly 10 Academy
+  ['IF1404', 'Chocolateras'], // Deportivo III sala
+  ['100263562', 'Chocolateras'], // Reebok Touch ID futsal
 ])
 
 function mapCategory(raw) {
@@ -253,9 +261,20 @@ function footballSurfaceFromName(name) {
     .toUpperCase()
     .normalize('NFD')
     .replace(/\p{M}/gu, '')
-  if (/\bFG\b|FG\/|\/MG\b|\bMG\b|\bAG\b|\bSG\b/.test(t)) return 'Chimpunes'
+    .replace(/Ú/g, 'U')
+  const hasStudSole =
+    /\bFG\b|FG\/|\/MG\b|\bMG\b|\bAG\b|\bSG\b|FIRM GROUND|SOFT GROUND/.test(t)
+  if (hasStudSole) return 'Chimpunes'
   // No usar "STREET" suelto: matcheaba STREETTALK (Urbanas).
-  if (/\bTF\b|TURF|SALA|\bIN\b|STREETG|\bIC\b/.test(t)) return 'Chocolateras'
+  if (/\bTF\b|TURF|SALA|\bIN\b|INDOOR|STREETG|\bIC\b|COQUITO/.test(t)) {
+    return 'Chocolateras'
+  }
+  if (/\bACADEMY\b|TIEMPO MAESTRO|DEPORTIVO III|TOUCH ID/.test(t)) {
+    return 'Chocolateras'
+  }
+  // Tier club/league del PDF sin FG/MG/AG en el nombre → suele ser tur f/plana.
+  if (/\bCLUB\b/.test(t) && !hasStudSole) return 'Chocolateras'
+  if (/PREDATOR LEAGUE|F50 LEAGUE/.test(t) && !hasStudSole) return 'Chocolateras'
   return null
 }
 
@@ -274,22 +293,20 @@ function looksLikeFootballName(name) {
  * fútbol se parte en Chimpunes (toperol grande) vs Chocolateras.
  */
 function finalizeCategory(pdfCategory, name, code) {
-  const surface =
-    FOOTBALL_SOLE_BY_CODE.get(String(code || '').toUpperCase()) ||
-    footballSurfaceFromName(name)
+  const codeKey = String(code || '').toUpperCase()
+  const fromSku = FOOTBALL_SOLE_BY_CODE.get(codeKey)
+  if (fromSku) return fromSku
 
+  const surface = footballSurfaceFromName(name)
   if (surface) return surface
 
-  if (
+  const footballContext =
     pdfCategory === 'Chimpunes' ||
     (pdfCategory === 'Todoterreno' && looksLikeFootballName(name))
-  ) {
-    // Sin marcador de suela: dejar Chimpunes solo si el PDF dijo fútbol;
-    // modelos mal etiquetados como Terrex/Outdoor con nombre de fútbol
-    // sin FG/TF quedan fuera de Todoterreno.
-    if (pdfCategory === 'Todoterreno' && looksLikeFootballName(name)) {
-      return 'Chimpunes'
-    }
+
+  if (footballContext) {
+    // Sin toperol grande explícito en nombre → chocolatera (coquito/plana).
+    return 'Chocolateras'
   }
 
   return pdfCategory
@@ -971,6 +988,7 @@ export interface Product {
   sizes: number[]
   colors: string[]
   image: string
+  gallery?: string[]
   description: string
   featured?: boolean
 }
@@ -1000,8 +1018,11 @@ export const allSizes = ${JSON.stringify(
 
 export const products: Product[] = [
 ${products
-  .map(
-    (p) => `  {
+  .map((p) => {
+    const galleryLine = p.gallery?.length
+      ? `\n    gallery: ${JSON.stringify(p.gallery)},`
+      : ''
+    return `  {
     id: ${JSON.stringify(p.id)},
     code: ${JSON.stringify(p.code)},
     name: ${JSON.stringify(p.name)},
@@ -1014,10 +1035,10 @@ ${products
     wholesalePrice: ${p.wholesalePrice},
     sizes: ${JSON.stringify(p.sizes)},
     colors: ${JSON.stringify(p.colors)},
-    image: ${JSON.stringify(p.image)},
+    image: ${JSON.stringify(p.image)},${galleryLine}
     description: ${JSON.stringify(p.description)},
-  }`,
-  )
+  }`
+  })
   .join(',\n')}
 ]
 
@@ -1180,6 +1201,16 @@ async function main() {
       a.brand.localeCompare(b.brand) ||
       a.name.localeCompare(b.name),
   )
+
+  const galleryByCode = new Map(
+    loadExistingCatalog()
+      .filter((p) => Array.isArray(p.gallery) && p.gallery.length)
+      .map((p) => [String(p.code).toUpperCase(), p.gallery]),
+  )
+  for (const p of unique) {
+    const extras = galleryByCode.get(String(p.code).toUpperCase())
+    if (extras?.length) p.gallery = extras
+  }
 
   const clean = stripInternalFields(unique)
   validateCatalog(clean)

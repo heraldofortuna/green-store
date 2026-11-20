@@ -31,17 +31,19 @@ export function ProductCard({ product, onOpen }: ProductCardProps) {
           }
         >
           <BrandMark brand={product.brand} className="product-media-brand" />
-          <img
-            className="product-media-shot"
-            src={
-              hasImage
-                ? productImage(product.image)
-                : asset('images/logo-green.png')
-            }
-            alt=""
-            loading="lazy"
-            decoding="async"
-          />
+          <div className="product-media-shot-wrap">
+            <img
+              className="product-media-shot"
+              src={
+                hasImage
+                  ? productImage(product.image)
+                  : asset('images/logo-green.png')
+              }
+              alt=""
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
           {product.featured ? (
             <span className="product-badge">Destacado</span>
           ) : null}

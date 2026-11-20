@@ -14,6 +14,24 @@ Cuando el usuario entregue PDFs de comercio (Nike, Adidas, Reebok, RS21, etc.):
 3. Ejecuta el import por script y reporta solo conteos (marca → N productos, con/sin imagen).
 4. **NO** “arregles” tallas, nombres o categorías a mano en `products.ts` / `catalog.json`. Todo va por `scripts/import-catalog.mjs` + `npm run import:catalog`.
 
+## Vigilar PDFs Fritz (diario)
+
+Página: https://www.fritzsportcatalogo.pe/pdf — los enlaces van a `cdn.fritzsport.pe/.../catalog-pdfs/.../*.pdf`.
+
+```bash
+# Ver Adidas, Nike, RS21, Reebok y marcar novedades vs el día anterior
+npm run catalog:check-fritz
+
+# Tras revisar / importar, persistir estado para la próxima corrida
+npm run catalog:check-fritz -- --write-state
+```
+
+Novedad = URL o nombre de archivo distinto al guardado en `scripts/fritz-catalog-state.json` (el prefijo `179519…` y la fecha en el nombre, ej. `20_NOVIEMBRE_2026`).
+
+**No** importar automáticamente desde este script; si hay PDF nuevo, descargar y `npm run import:catalog -- --brand … --file …`.
+
+Automatización opcional: workflow `.github/workflows/fritz-catalog-check.yml` (cron diario) o recordatorio local `/loop 1d` con el mismo comando.
+
 ## Comando
 
 ```bash
@@ -82,3 +100,15 @@ Sé breve. Incluye:
 - si hace falta commit/push
 
 No listes cientos de productos.
+
+## Galería (fotos extra en el modal)
+
+1. **Primero** `npm run gallery:ebiz` (match por SKU en eBiz).
+2. **Adidas sin match eBiz** → **INTERTOP** (misma fuente que GW6423 / Tensaur):
+   - CDN: `https://s1.media.intertop.com/load/{mediaId}/original/{vista}.webp`
+   - Vistas **2, 3, 5** (no usar `/large/` — suele repetir el mismo thumb).
+   - Mapa SKU → `mediaId` en `scripts/adidas-intertop-media.json` (ej. `GW6423` → `mp301636`).
+   - Si falta el `mediaId`: buscar `site:intertop.ua {SKU}`, abrir la ficha y extraer el id de la URL de imagen (`load/mp…`).
+   - **No** explorar assets.adidas.com ni otras tiendas salvo que el usuario lo pida.
+3. Comando: `npm run gallery:intertop -- --code GW6423` (o `--all-adidas` solo donde ya hay `mediaId` en el mapa).
+4. **No** editar `gallery` a mano en JSON/TS; correr el script y reportar conteos.

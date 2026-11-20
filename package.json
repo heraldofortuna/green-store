@@ -9,7 +9,10 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "deploy": "npm run build && gh-pages -d dist -b gh-pages",
-    "import:catalog": "node scripts/import-catalog.mjs"
+    "import:catalog": "node scripts/import-catalog.mjs",
+    "gallery:ebiz": "node scripts/fetch-ebiz-gallery.mjs",
+    "gallery:intertop": "node scripts/fetch-intertop-gallery.mjs",
+    "catalog:check-fritz": "node scripts/check-fritz-catalogs.mjs"
   },
   "dependencies": {
     "@tanstack/react-virtual": "^3.14.26",

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { formatPrice, type Product } from '../data/products'
 import { asset } from '../lib/assets'
 import {
@@ -27,16 +27,26 @@ export function ProductModal({
 }: ProductModalProps) {
   const [size, setSize] = useState<number | null>(null)
   const [priceType, setPriceType] = useState<PriceType>('emprendedor')
+  const [shotIndex, setShotIndex] = useState(0)
+
+  const shots = useMemo(() => {
+    if (!product) return [] as string[]
+    const primary = product.image ? [product.image] : []
+    const extras = (product.gallery || []).filter((src) => src !== product.image)
+    return [...primary, ...extras]
+  }, [product])
 
   useEffect(() => {
     if (!product) {
       setSize(null)
       setPriceType('emprendedor')
+      setShotIndex(0)
       return
     }
 
     setSize(product.sizes.length === 1 ? product.sizes[0] : null)
     setPriceType('emprendedor')
+    setShotIndex(0)
   }, [product])
 
   useEffect(() => {
@@ -99,15 +109,40 @@ export function ProductModal({
           }
         >
           <BrandMark brand={product.brand} className="modal-media-brand" />
-          <img
-            className="modal-media-shot"
-            src={
-              product.image
-                ? productImage(product.image)
-                : asset('images/logo-green.png')
-            }
-            alt={product.name}
-          />
+          <div className="modal-media-shot-wrap">
+            <img
+              className="modal-media-shot"
+              src={
+                shots[shotIndex]
+                  ? productImage(shots[shotIndex])
+                  : product.image
+                    ? productImage(product.image)
+                    : asset('images/logo-green.png')
+              }
+              alt={product.name}
+            />
+          </div>
+          {shots.length > 1 ? (
+            <div className="modal-gallery" role="tablist" aria-label="Fotos del producto">
+              {shots.map((src, index) => (
+                <button
+                  key={src + index}
+                  type="button"
+                  role="tab"
+                  aria-selected={shotIndex === index}
+                  aria-label={`Ver imagen ${index + 1}`}
+                  className={
+                    shotIndex === index
+                      ? 'modal-gallery-thumb is-active'
+                      : 'modal-gallery-thumb'
+                  }
+                  onClick={() => setShotIndex(index)}
+                >
+                  <img src={productImage(src)} alt="" loading="lazy" />
+                </button>
+              ))}
+            </div>
+          ) : null}
         </div>
 
         <div className="modal-body">
