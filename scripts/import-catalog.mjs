@@ -88,23 +88,23 @@ const POPPLER_BIN =
 const PDFS = [
   {
     brand: 'Nike',
-    file: 'C:/Users/heral/Downloads/1795192216720_CATALOGO_NIKE_20_NOVIEMBRE_2026.pdf',
+    file: 'C:/Users/heral/Downloads/1795269434174_CATALOGO_NIKE_21_NOVIEMBRE_2026.pdf',
   },
   {
     brand: 'Adidas',
-    file: 'C:/Users/heral/Downloads/1795192214265_CATALOGO_ADIDAS_LINEA_20_NOVIEMBRE_2026.pdf',
+    file: 'C:/Users/heral/Downloads/1795269431698_CATALOGO_ADIDAS_LINEA_21_NOVIEMBRE_2026.pdf',
   },
   {
     brand: 'Adidas',
-    file: 'C:/Users/heral/Downloads/1795192214772_CATALOGO_ADIDAS_LIQUIDACION_20_NOVIEMBRE_2026.pdf',
+    file: 'C:/Users/heral/Downloads/1795269432216_CATALOGO_ADIDAS_LIQUIDACION_21_NOVIEMBRE_2026.pdf',
   },
   {
     brand: 'Reebok',
-    file: 'C:/Users/heral/Downloads/1795192216156_CATALOGO_REEBOK_Y_CHAMPION_20_NOVIEMBRE_2026.pdf',
+    file: 'C:/Users/heral/Downloads/1795269433609_CATALOGO_REEBOK_Y_CHAMPION_21_NOVIEMBRE_2026.pdf',
   },
   {
     brand: 'RS21',
-    file: 'C:/Users/heral/Downloads/1795192215605_CATALOGO_RS_21_20_NOVIEMBRE_2026.pdf',
+    file: 'C:/Users/heral/Downloads/1795269433091_CATALOGO_RS_21_21_NOVIEMBRE_2026.pdf',
   },
 ]
 
