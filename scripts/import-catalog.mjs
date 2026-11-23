@@ -15,6 +15,7 @@ const { createCanvas, loadImage } = require('canvas')
 const pdfjsLib = await import(
   pathToFileURL(require.resolve('pdfjs-dist/legacy/build/pdf.mjs')).href
 )
+const { listFritzCatalogs } = await import('./lib/fritz-pdfs.mjs')
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const OUT_DIR = path.join(ROOT, 'public/images/products')
@@ -23,13 +24,42 @@ const JSON_OUT = path.join(ROOT, 'src/data/catalog.json')
 const TMP_DIR = path.join(ROOT, '.tmp-pdf-import')
 
 function parseArgs(argv) {
-  const args = { brand: null, files: [] }
+  const args = { brand: null, files: [], fromFritz: false }
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]
     if (a === '--brand') args.brand = argv[++i]
     else if (a === '--file') args.files.push(argv[++i])
+    else if (a === '--from-fritz') args.fromFritz = true
   }
   return args
+}
+
+function pdfimagesCommand() {
+  if (process.env.PDFIMAGES) return process.env.PDFIMAGES
+  if (process.platform === 'win32') {
+    return path.join(POPPLER_BIN, 'pdfimages.exe')
+  }
+  return 'pdfimages'
+}
+
+async function downloadFritzPdfs(destDir) {
+  const catalogs = await listFritzCatalogs()
+  if (!catalogs.length) {
+    throw new Error('Fritz no devolvió PDFs de las marcas vigiladas.')
+  }
+  fs.mkdirSync(destDir, { recursive: true })
+  const jobs = []
+  for (const cat of catalogs) {
+    console.log(`   bajando ${cat.brand}: ${cat.fileName}`)
+    const res = await fetch(cat.url, {
+      headers: { 'User-Agent': 'GREEN-catalog-import/1.0' },
+    })
+    if (!res.ok) throw new Error(`Fritz PDF HTTP ${res.status}: ${cat.fileName}`)
+    const file = path.join(destDir, cat.fileName)
+    fs.writeFileSync(file, Buffer.from(await res.arrayBuffer()))
+    jobs.push({ brand: cat.brand, file })
+  }
+  return jobs
 }
 
 function loadExistingCatalog() {
@@ -614,7 +644,7 @@ async function whitenProductBackground(srcPath, destPath) {
 
 function runPdfImagesList(pdfPath) {
   const result = spawnSync(
-    path.join(POPPLER_BIN, 'pdfimages.exe'),
+    pdfimagesCommand(),
     ['-list', pdfPath],
     { encoding: 'utf8' },
   )
@@ -641,7 +671,7 @@ function runPdfImagesList(pdfPath) {
 
 function extractPdfImages(pdfPath, destPrefix) {
   const result = spawnSync(
-    path.join(POPPLER_BIN, 'pdfimages.exe'),
+    pdfimagesCommand(),
     ['-all', pdfPath, destPrefix],
     { encoding: 'utf8' },
   )
@@ -1141,6 +1171,9 @@ async function importOne(entry, seq) {
 
 async function main() {
   const cli = parseArgs(process.argv.slice(2))
+  if (cli.fromFritz && (cli.brand || cli.files.length)) {
+    throw new Error('Usa --from-fritz solo, o --brand/--file, no ambos.')
+  }
   const replaceMode = Boolean(cli.brand && cli.files.length)
 
   fs.mkdirSync(OUT_DIR, { recursive: true })
@@ -1148,7 +1181,9 @@ async function main() {
 
   const pdfJobs = replaceMode
     ? cli.files.map((file) => ({ brand: cli.brand, file }))
-    : PDFS
+    : cli.fromFritz
+      ? await downloadFritzPdfs(path.join(TMP_DIR, 'fritz'))
+      : PDFS
 
   if (replaceMode) {
     console.log(`\nModo reemplazo: solo marca "${cli.brand}"`)

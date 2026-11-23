@@ -1,0 +1,45 @@
+name: Fritz catalog import
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fritz-catalog
+  cancel-in-progress: false
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Dependencias nativas (canvas + pdfimages)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential libcairo2-dev libpango1.0-dev libjpeg-dev \
+            libgif-dev librsvg2-dev poppler-utils
+      - name: Install
+        run: npm ci
+      - name: Bajar PDFs de Fritz e importar catálogo
+        run: npm run import:fritz
+      - name: Marcar catálogos como conocidos
+        run: npm run catalog:check-fritz -- --write-state
+      - name: Publicar catálogo
+        run: |
+          git add src/data/products.ts src/data/catalog.json public/images/products scripts/fritz-catalog-state.json
+          if git diff --cached --quiet; then
+            echo "El catálogo ya estaba al día"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -m "feat: importar catálogos actuales de Fritz"
+          git push
